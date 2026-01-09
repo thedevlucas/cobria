@@ -7,6 +7,8 @@ import { PendingMessage } from '../../models/PendingMessage';
 import { QueryTypes } from 'sequelize';
 import { User } from '../../models/User';
 
+import { sendWhatsappMessage } from "./WhatsAppService";
+
 import { AIService, defaultAIConfig } from '../ai/AIService';
 
 const aiService = new AIService(defaultAIConfig.apiKey);
@@ -275,12 +277,12 @@ export class RealChatService {
       const cellphone = debtor.cellphones[0];
       const targetPhone = Number(cellphone.number);
 
-      const myTwilioNumber = process.env.TWILIO_FROM_NUMBER
-        ? Number(process.env.TWILIO_FROM_NUMBER)
-        : 123456789;
+      if (process.env.TWILIO_WHATSAPP_NUMBER === undefined) {
+        throw new Error("TWILIO_WHATSAPP_NUMBER no está configurado en el archivo .env");
+      }
+      const myTwilioNumber = Number(process.env.TWILIO_WHATSAPP_NUMBER)
 
       const calculatedCost = this.calculateMessageCost(messageType) || 0.01;
-
       const companyId = await this.resolveCompanyId(userId);
 
       const chatMessage = await Chat.create({
@@ -295,6 +297,7 @@ export class RealChatService {
         collection_stage: this.determineCollectionStage(debtor.paid, null),
       });
 
+      // 2. Registrar el costo (Cost)
       try {
         await Cost.create({
           id_company: companyId,
@@ -305,20 +308,34 @@ export class RealChatService {
           updatedat: new Date(),
         });
       } catch (e) {
-        console.error('[Cost] Falló Cost.create (probable FK issue), pero continúo:', e);
+        console.error('[Cost] Falló Cost.create, pero continúo:', e);
       }
 
-      await PendingMessage.create({
-        company_id: companyId,
-        from_number: myTwilioNumber,
-        id_user: userId,
-        id_debtor: debtor.id,
-        phone_number: targetPhone,
-        message,
-        type: 'whatsapp',
-        status: 'pending',
-        scheduled_time: new Date(),
+      try {
+          await sendWhatsappMessage(
+              "+" + myTwilioNumber.toString(), 
+              "+" + targetPhone.toString(), 
+              message, 
+              userId
+          );
+          console.log(`[RealChatService] Mensaje enviado a Twilio: ${targetPhone}`);
+      } catch (twilioError) {
+          console.error('[RealChatService] Error enviando a Twilio:', twilioError);
+          // Opcional: Actualizar el estado del chatMessage a 'failed'
+          // chatMessage.status = 'failed';
+          // await chatMessage.save();
+      }
+      
+      // NOTA: Puedes mantener PendingMessage si quieres redundancia o logs, 
+      // pero si envías aquí directo, el scheduler podría duplicar el envío 
+      // si no cambias el estado a 'processed' o lo eliminas.
+      /* await PendingMessage.create({
+        ...
+        status: 'processed', // Cambiar a processed para que el scheduler no lo reenvíe
+        ...
       });
+      */
+      // -----------------------------
 
       return {
         id: chatMessage._id.toString(),
