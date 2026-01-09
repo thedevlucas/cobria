@@ -299,12 +299,12 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <MenuComponent />
       
       {/* Header with Statistics */}
       {statistics && (
-        <Paper sx={{ p: 2, mb: 2 }}>
+        <Paper sx={{ p: 2, mb: 2, flexShrink: 0 }}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={3}>
               <Card>
@@ -350,12 +350,13 @@ const Chat: React.FC = () => {
         </Paper>
       )}
 
-      <Grid container spacing={2} sx={{ flex: 1, overflow: 'hidden' }}>
+      {/* Main Content Grid */}
+      <Grid container spacing={2} sx={{ flex: 1, overflow: 'hidden', minHeight: 0, pb: 1, px: 2 }}>
         {/* Enhanced Contact List with Debtors */}
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Grid item xs={12} md={4} sx={{ height: '100%' }}>
+          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {/* Header with Action Buttons */}
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6" component="h2">
                   Contactos (Deudores)
@@ -409,7 +410,7 @@ const Chat: React.FC = () => {
             </Box>
 
             {/* Contact List */}
-            <Box sx={{ flex: 1, overflow: 'auto' }}>
+            <Box sx={{ flex: 1, overflowY: 'auto' }}>
               {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                   <CircularProgress />
@@ -485,8 +486,8 @@ const Chat: React.FC = () => {
         </Grid>
 
         {/* Chat Area */}
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Grid item xs={12} md={8} sx={{ height: '100%' }}>
+          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {showNewChat ? (
               // New Chat State
               <Box sx={{ 
@@ -495,7 +496,8 @@ const Chat: React.FC = () => {
                 flexDirection: 'column', 
                 justifyContent: 'center', 
                 alignItems: 'center',
-                p: 3
+                p: 3,
+                overflowY: 'auto'
               }}>
                 <ChatIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
                 <Typography variant="h5" gutterBottom>
@@ -516,7 +518,7 @@ const Chat: React.FC = () => {
             ) : selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <Avatar sx={{ mr: 2 }}>
                       <PersonIcon />
@@ -539,7 +541,16 @@ const Chat: React.FC = () => {
                 </Box>
 
                 {/* Messages */}
-                <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+                <Box 
+                  sx={{ 
+                    flex: 1, 
+                    overflowY: 'auto', // Forzar scroll vertical
+                    overflowX: 'hidden', // Evitar scroll horizontal
+                    p: 2,
+                    display: 'flex', // Asegura que el contenido se comporte bien
+                    flexDirection: 'column'
+                  }}
+                >
                   {loading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
                       <CircularProgress />
@@ -589,7 +600,7 @@ const Chat: React.FC = () => {
                 </Box>
 
                 {/* Message Input */}
-                <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+                <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <IconButton onClick={() => fileInputRef.current?.click()}>
                       <AttachFileIcon />
@@ -639,7 +650,6 @@ const Chat: React.FC = () => {
           {error}
         </Alert>
       )}
-
 
       {/* Hidden file input */}
       <input
