@@ -56,7 +56,7 @@ export class ProcessIncomingMessage {
     const toNumber = this.removeWhatsappPrefix(params.debtorNumber);
 
     const debtor = await this.debtorRepository.findByCellphone(
-      Number(fromNumber),
+      Number(toNumber),
       Number(toNumber)
     );
 
@@ -156,6 +156,20 @@ export class ProcessIncomingMessage {
       idUser: debtor.id_user,
     });
 
+    const chatBot = Chat.create({
+        idUser: debtor.id_user,
+        fromCellphone: Number(fromNumber),
+        toCellphone: Number(toNumber),
+        message: whatsappResponse, 
+    });
+    await this.chatRepository.save(chatBot);
+
+    if (botResponseFormatted.actionRecord && botResponseFormatted.actionRecord !== "null") {
+         if (debtor.events && debtor.events.length > 5000) debtor.events = ""; 
+         debtor.addEvent(botResponseFormatted.actionRecord);
+    }
+    
+    debtor.updateStatus(botResponseFormatted.status as PaymentStatus);
     await this.debtorRepository.save(debtor);
 
     return { message: "Mensaje enviado" };
@@ -167,19 +181,36 @@ export class ProcessIncomingMessage {
     return number.startsWith(prefix) ? number.replace(prefix, "") : number;
   }
 
-  private formatBotResponse(
-    botResponse: string,
-    debtorName: string
-  ): {
-    userResponse: string;
-    actionRecord: string;
-    status: string;
-  } {
-    return JSON.parse(
-      botResponse
-        .replace(/```json|```/g, "")
-        .trim()
-        .replace("[Nombre del deudor]", debtorName)
-    );
+  private formatBotResponse(botResponse: string, debtorName: string) {
+    try {
+      console.log("🤖 Respuesta Cruda de IA:", botResponse); // Para depurar
+
+      // 1. Buscamos dónde empieza el primer '{' y dónde termina el último '}'
+      const firstBrace = botResponse.indexOf('{');
+      const lastBrace = botResponse.lastIndexOf('}');
+
+      if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON found");
+
+      const cleanJsonString = botResponse.substring(firstBrace, lastBrace + 1);
+
+      const parsed = JSON.parse(cleanJsonString);
+
+      return {
+        userResponse: parsed.userResponse || "Ocurrió un error, intenta de nuevo.",
+        actionRecord: parsed.actionRecord || null,
+        status: parsed.status || "Contact"
+      };
+
+    } catch (e) {
+      console.warn("⚠️ No se pudo extraer JSON. Usando respuesta como texto plano.");
+      
+      const cleanText = botResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+
+      return {
+        userResponse: cleanText, 
+        actionRecord: null,        
+        status: "Contact",         
+      };
+    }
   }
 }

@@ -34,7 +34,7 @@ export const DebtorEntity = new EntitySchema<Debtor>({
       nullable: false,
     },
     events: {
-      type: String,
+      type: "text",
       nullable: true,
     },
     createdAt: {

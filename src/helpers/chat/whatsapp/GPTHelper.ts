@@ -85,6 +85,7 @@ export async function sendContextMessage(
     const responseText = result.response.text();
     return responseText;
   } catch (error) {
+    console.error(error);
     const error_response = {
       userResponse:
         "Desafortunadamente, el servicio ha sido un error. Póngase en contacto más tarde. Haremos nuestro mejor esfuerzo para contactarlo lo antes posible.",
