@@ -1,0 +1,10 @@
+{
+    "_comentarios1": "Configuración de OCR, algoritmo de reconocimiento de texto en imágenes",
+    "language": "spa",
+
+    "_comentarios2": "Aquí andamos indicando en qué columna se encuentra el valor de la mora, por si se llega a cambiar el nombre de la columna en excel también se deberá de cambiar su valor (minusculas y sin tiles, como siempre)",
+    "mora": "saldo int. mora legal",
+
+    "_comentarios3": "Aquí andamos indiciando en qué columna se encuentra el valor del nombre, por si llega a cambiar el nombre de la columna en excel también se deberá de cambiar su valor (minusculas y sin tiles, como siempre)",
+    "name": "nombre"
+}

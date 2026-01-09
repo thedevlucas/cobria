@@ -1,0 +1,18 @@
+{
+    "_comentario": "Este json está encargado de los cálculos de los pagos de la deuda, los nombres de las columnas se ponen en mínusculas y sin tildes para ser detectados.", 
+
+    "_comentario1": "Las columnas de los pagos. La key se refiere al nombre de variable que vamos a user, el value se refiere al nombre de la columna en el excel. Ya dentro de la formula es usar los nombres ed las variables.",
+    "payment":{ 
+        "payment_columns":{
+            "mora":"saldo int. mora legal"
+        },
+        "payment_formula": "mora/amount"
+    },
+
+    "_comentario2": "Para la identificación de fechas en caso de que el usuario quiera pagar (aquí dejo el mes y año, pero ya dentro del prompt se modificó para sólo tomar días)",
+    "date":{
+        "day": ["dia","day"],
+        "month": ["mes","month"],
+        "year": ["año","year"]
+    }
+}

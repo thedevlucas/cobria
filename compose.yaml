@@ -1,0 +1,85 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres-db
+    environment:
+      POSTGRES_DB: cobraria_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: cobria-backend
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${PORT:-3000}
+      # Database Configuration (PostgreSQL)
+      DATABASE_HOST: postgres
+      DATABASE_NAME: ${DATABASE_NAME:-cobraria_db}
+      DATABASE_USER: ${DATABASE_USER:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-password}
+      DATABASE_PORT: 5432
+      ENDPOINT_DATABASE: postgres
+      DATABASE_URL: postgresql://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-password}@postgres:5432/${DATABASE_NAME:-cobraria_db}
+      # MongoDB Configuration
+      MONGO_URL: mongodb://mongo:27017/cobraria
+      # Twilio Configuration
+      ACCOUNT_SID: ${ACCOUNT_SID}
+      AUTH_TOKEN_TWILLIO: ${AUTH_TOKEN_TWILLIO}
+      TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER}
+      # Encryption Configuration
+      CRYPT_ALGORITHM: ${CRYPT_ALGORITHM:-aes-256-cbc}
+      CRYPT_KEY: ${CRYPT_KEY}
+      CRYPT_IV: ${CRYPT_IV}
+      # Email Configuration
+      EMAIL: ${EMAIL}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      EMAIL_PORT: ${EMAIL_PORT:-465}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      # Password Configuration
+      PASSWORD_SALT: ${PASSWORD_SALT:-8}
+      # JWT Configuration
+      JWT_KEY: ${JWT_KEY}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      # Host Configuration
+      BACKEND_HOST: ${BACKEND_HOST:-http://localhost:3000}
+      FRONTEND_HOST: ${FRONTEND_HOST:-http://localhost:5173}
+      # API Keys
+      BARD_API_KEY: ${BARD_API_KEY}
+      OCR_API_KEY: ${OCR_API_KEY}
+    ports:
+      - "${PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  mongo_data:

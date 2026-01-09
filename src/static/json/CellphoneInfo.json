@@ -1,0 +1,6 @@
+{
+  "_comentarios": "Estos son los datos del teléfono, se pone el código y la longitud según si es teléfono o celular.",
+  "country_code": "+593",
+  "cellphone_length": 9,
+  "telephone_length": 8
+}

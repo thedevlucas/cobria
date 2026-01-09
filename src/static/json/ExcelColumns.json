@@ -1,0 +1,17 @@
+{
+    "_comentarios": "Este json está encargado de las columnas que se definen necesarias para el comportamiento normal del bot, los nombres de las columnas se ponen en mínusculas y sin tildes para ser detectados.", 
+    "_comentarios2": "Toda columna que tenga dentro 'telefono', 'phone', 'celular', 'cell' lo va a tomar como columna de telefono (celular o telefono, da igual)",
+    "telephone": "telefono",
+    "telephone_alternatives": ["phone", "celular", "cell", "telefono", "telephone", "mobile", "movil", "phone numb", "phone number", "contact", "numero", "number"],
+    "email_alternatives": ["email", "correo", "mail", "e-mail", "electronic mail", "contact email"],
+    "required": [
+        "nombre",
+        "cedula",
+        "saldo int. mora legal"
+    ],
+    "required_alternatives": {
+        "nombre": ["name", "nombre", "client name", "debtor name", "cliente", "full name", "debtor", "customer", "client", "full name"],
+        "cedula": ["cedula", "id", "document", "documento", "dni", "rut", "ci", "debtor id", "customer id", "client id", "invoice num", "invoice number"],
+        "saldo int. mora legal": ["saldo", "debt", "amount", "monto", "deuda", "balance", "amount due", "total", "outstanding", "remaining", "saldo int. mora legal", "saldo int mora legal", "amount owed", "due amount", "balance", "amount due", "amount paid", "amount owed", "amount due"]
+    }
+}
