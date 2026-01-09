@@ -451,10 +451,24 @@ const EnhancedCreatePhone: React.FC<EnhancedCreatePhoneProps> = ({
         return;
       }
 
+      let cleanNumber = formData.phoneNumber.replace(/\D/g, '');
+      
+      if (cleanNumber.startsWith('0')) {
+        cleanNumber = cleanNumber.substring(1);
+      }
+      
+      let fullNumberString = `${formData.countryCode}${cleanNumber}`;
+
+      // CASO ESPECIAL ARGENTINA 54 -> 549
+      if (formData.countryCode === '54' && formData.phoneType === 'cellphone') {
+          if (!cleanNumber.startsWith('9')) {
+             fullNumberString = `${formData.countryCode}9${cleanNumber}`;
+          }
+      }
 
       const phoneData = {
-        number: parseInt(formData.phoneNumber.replace(/\s/g, '')), // Cambiado a 'number' según tu nuevo modelo
-        id_debtor: formData.debtorId, // Cambiado a 'id_debtor'
+        number: parseInt(fullNumberString),
+        id_debtor: formData.debtorId,
       };
       await axios.post(`${API_URL}/api/cellphone/${userId}`, phoneData, {
         headers: { Authorization: `Bearer ${token}` }
