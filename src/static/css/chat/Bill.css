@@ -1,0 +1,13 @@
+.bill-container{
+    display: flex;
+    flex-direction: column;
+}
+.bill-icons{
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+}
+.bill-icons svg{
+    cursor: pointer;
+}

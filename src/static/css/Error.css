@@ -1,0 +1,25 @@
+.error-all-container{
+    position:absolute;
+    top:0;
+    left:0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #080296;
+    color:white;
+}
+.error-all-container h1{
+    font-size: 10vh
+}
+.error-all-container h2{
+    font-size: 5vh
+}
+.error-all-container p{
+    font-size: 3vh;
+}
+.error-all-container a{
+    color: white;
+}

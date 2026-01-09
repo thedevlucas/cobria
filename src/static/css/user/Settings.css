@@ -1,0 +1,43 @@
+main{
+    width: 100%;
+    height: 85%;
+}
+.settings-options{
+    float: left;
+    margin: 2.5%;
+    width: 30%;
+    height: 85%;
+}
+.settings-container{
+    float:right;
+    width: 60%;
+    height: 85%;
+    margin: 0 2.5%;
+}
+.settings-modify-password{
+    position:relative;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+.settings-delete-account{
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+.settings-delete-account img{
+    width: 40%;
+    height: 60%;
+}
+.settings-delete-buttons{
+    display: flex;
+    margin-top: 2vh;
+    gap: 4vw;
+}
+
