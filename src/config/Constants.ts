@@ -42,7 +42,7 @@ export const jwt_expires_in = process.env.JWT_EXPIRES_IN;
 export const backend_host = process.env.BACKEND_HOST;
 export const frontend_host = process.env.FRONTEND_HOST;
 // LLM
-export const bard_api_key = process.env.BARD_API_KEY;
+export const bard_api_key = process.env.GEMINI_API_KEY;
 // Gpt prompts
 function gptPrompts(): string {
   const prompts = readFileSync(

@@ -79,5 +79,5 @@
   "language": "es-MX",
 
   "_comentarios14": "El modelo de GPT que se va a usar",
-  "gpt_model": "gemini-1.5-flash"
+  "gpt_model": "gemini-2.5-flash"
 }

@@ -18,10 +18,8 @@ import {
   PendingMessage,
   PendingMessageType,
 } from "../../../company/domain/PendingMessages";
-import { AgentRepository } from "../../../agent/domain/AgentRepository";
 import { httpError } from "../../../../../config/CustomError";
 import { CompanyNotFoundException } from "../../../company/domain/exceptions/CompanyNotFound";
-import { Role } from "../../../company/domain/Company";
 import { ChatRepository } from "../../../chat/domain/ChatRepository";
 import { Chat } from "../../../chat/domain/Chat";
 
@@ -37,6 +35,33 @@ export class SendStartingMessage {
     private readonly chatRepository: ChatRepository
   ) {}
 
+  private cleanDigits(input: string): string {
+    return (input || "").toString().replace(/\D/g, "");
+  }
+
+  private buildE164Like(params: {
+    rawPhone: string;
+    countryCode: string;
+  }): string | null {
+    const raw = this.cleanDigits(params.rawPhone);
+    const cc = this.cleanDigits(params.countryCode);
+
+    // si está vacío o no numérico
+    if (!raw) return null;
+
+    // WhatsApp/E.164: máximo 15 dígitos (sin el +)
+    // si ya viene internacional (ej: arranca con countryCode) no lo duplicamos
+    let full = raw.startsWith(cc) ? raw : `${cc}${raw}`;
+
+    // regla dura: si supera 15 dígitos, NO es whatsapp (ej. tarjeta 16 dígitos)
+    if (full.length > 15) return null;
+
+    // demasiado corto
+    if (full.length < 10) return null;
+
+    return full;
+  }
+
   async run(params: {
     telephones: string[] | number[];
     row: WorkbookRow;
@@ -45,15 +70,15 @@ export class SendStartingMessage {
     countryCode?: string;
   }): Promise<void> {
     console.log("🚀 SendStartingMessage: Processing CSV row for debtor creation...");
-    console.log(`📊 SendStartingMessage: Row data - Name: ${params.row.nombre}, Document: ${params.row.cedula}, Company: ${params.idCompany}`);
+    console.log(
+      `📊 SendStartingMessage: Row data - Name: ${params.row.nombre}, Document: ${params.row.cedula}, Company: ${params.idCompany}`
+    );
 
     let client: Client | null = null;
     const rowString = JSON.stringify(params.row);
-    const company = await this.companyRepository.findById(params.idCompany);
 
-    if (!company) {
-      throw new CompanyNotFoundException();
-    }
+    const company = await this.companyRepository.findById(params.idCompany);
+    if (!company) throw new CompanyNotFoundException();
 
     if (params.idClient) {
       client = await this.companyRepository.findClientById(params.idClient);
@@ -63,87 +88,102 @@ export class SendStartingMessage {
       idCompany: params.idCompany,
     });
 
+    // FROM number (prioridad: client.phone -> TWILIO)
     let from_telephone: string;
-    
-    if (company.role === Role.SUPERADMIN) {
-      if (!twilio_whatsapp_number) {
-        throw new httpError("Número de WhatsApp de Twilio no configurado", 400);
-      }
-      from_telephone = twilio_whatsapp_number.toString();
+
+    if (
+      client?.phone &&
+      !isNaN(Number(client.phone)) &&
+      client.phone.toString().trim() !== ""
+    ) {
+      from_telephone = this.cleanDigits(client.phone.toString());
+      console.log(`📱 SendStartingMessage: Using client phone number: ${from_telephone}`);
+    } else if (twilio_whatsapp_number) {
+      from_telephone = this.cleanDigits(twilio_whatsapp_number.toString());
+      console.log(`📱 SendStartingMessage: Using Twilio WhatsApp number: ${from_telephone}`);
     } else {
-      // Validate client phone number
-      if (!client?.phone || isNaN(Number(client.phone))) {
-        throw new httpError("Número de teléfono del cliente no válido", 400);
-      }
-      from_telephone = client.phone.toString();
+      throw new httpError(
+        "No hay número configurado para enviar mensajes. Configure TWILIO_WHATSAPP_NUMBER o asigne un cliente con teléfono válido.",
+        400
+      );
     }
 
-    // Validate the final phone number
-    if (!from_telephone || from_telephone === "NaN" || isNaN(Number(from_telephone))) {
-      throw new httpError("Número de teléfono no válido", 400);
+    if (!from_telephone || from_telephone.length < 8) {
+      throw new httpError("Número de teléfono de origen no válido", 400);
     }
 
-    for (const telephone of params.telephones) {
-      if (!telephone) {
+    const cleanCountryCode =
+      this.cleanDigits(params.countryCode?.toString() || "") ||
+      this.cleanDigits(cellphoneInfo.country_code?.toString() || "") ||
+      "54";
+
+    for (const tel of params.telephones) {
+      if (!tel) continue;
+
+      const rawTel = tel.toString();
+      const onlyDigits = this.cleanDigits(rawTel);
+
+      // si no es numérico
+      if (!onlyDigits) {
+        console.log(`⚠️ SendStartingMessage: Skipping invalid phone number: ${rawTel}`);
         continue;
       }
 
-      const stringTelephoneToVerify = telephone.toString();
-
-      // Validate that the telephone is a valid number
-      if (!/^\d+$/.test(stringTelephoneToVerify)) {
-        console.log(`⚠️ SendStartingMessage: Skipping invalid phone number: ${stringTelephoneToVerify}`);
+      // si parece tarjeta u otra cosa (16+), skip
+      if (onlyDigits.length > 15) {
+        console.log(`⚠️ SendStartingMessage: Skipping phone number by length (>15): ${onlyDigits}`);
         continue;
       }
 
-      console.log(`👤 SendStartingMessage: Creating debtor for phone ${stringTelephoneToVerify}`);
-      console.log(`📊 SendStartingMessage: Row data -`, JSON.stringify(params.row, null, 2));
+      const telephoneWithCountryCode = this.buildE164Like({
+        rawPhone: onlyDigits,
+        countryCode: cleanCountryCode,
+      });
+
+      if (!telephoneWithCountryCode) {
+        console.log(`⚠️ SendStartingMessage: Invalid destination after formatting: ${cleanCountryCode} + ${onlyDigits}`);
+        continue;
+      }
+
+      console.log(`👤 SendStartingMessage: Creating debtor for phone ${telephoneWithCountryCode}`);
       console.log(`📊 SendStartingMessage: Name: ${params.row.nombre}, Document: ${params.row.cedula}`);
-      
+
       const debtor = await this.createDebtorService.run({
         name: params.row.nombre,
         document: params.row.cedula,
         idUser: params.idCompany,
         debtDate: params.row.fecha_deuda,
       });
+
       console.log(`✅ SendStartingMessage: Debtor created/retrieved - ID: ${debtor.id}, Name: ${debtor.name}`);
 
-      let telephoneWithCountryCode = params.countryCode
-        ? `${params.countryCode}${stringTelephoneToVerify}`
-        : `${cellphoneInfo.country_code}${stringTelephoneToVerify}`;
+      // Guardamos contexto IA como mensaje "interno" (luego lo filtrás en frontend)
+      const aiContextMessage = `[AI_CONTEXT_INTERNAL]${rowString}[/AI_CONTEXT_INTERNAL]`;
 
-      const numberTelephone = Number(telephoneWithCountryCode);
+      // IMPORTANTE: convertimos a Number SOLO si ya validamos <= 15 dígitos
+      const fromNum = Number(from_telephone);
+      const toNum = Number(telephoneWithCountryCode);
 
-      // Validate the phone number before using it
-      if (isNaN(numberTelephone)) {
-        console.log(`Invalid phone number: ${telephoneWithCountryCode}`);
+      if (Number.isNaN(fromNum) || Number.isNaN(toNum)) {
+        console.log(`⚠️ SendStartingMessage: NaN after conversion - from:${from_telephone} to:${telephoneWithCountryCode}`);
         continue;
       }
 
-      const jsonContextMessage = `${rowString}
-       ${gptPromptsJson.initial_json.parts[0].text}`;
-
-      // If it is a cellphone
-      // Create the cellphone or search it
       const cellphoneExists = await this.debtorRepository.findByCellphone(
-        Number(from_telephone),
-        numberTelephone,
+        fromNum,
+        toNum,
         params.idCompany
       );
 
       if (!cellphoneExists) {
-        await createCellphone4Csv(
-          debtor.id,
-          Number(from_telephone),
-          numberTelephone
-        );
+        await createCellphone4Csv(debtor.id, fromNum, toNum);
       }
 
       await this.createChatService.run({
         idUser: params.idCompany,
-        fromCellphone: Number(from_telephone),
-        toCellphone: numberTelephone,
-        message: jsonContextMessage,
+        fromCellphone: fromNum,
+        toCellphone: toNum,
+        message: aiContextMessage,
       });
 
       if (!isTimeToCommunicate) {
@@ -151,19 +191,17 @@ export class SendStartingMessage {
           const pendingMessage = PendingMessage.create({
             companyId: params.idCompany,
             phoneNumber: telephoneWithCountryCode,
-            message:
-              "Se intentó enviar un mensaje a un deudor fuera del horario permitido",
+            message: "Se intentó enviar un mensaje a un deudor fuera del horario permitido",
             type: PendingMessageType.WHATSAPP,
-            fromNumber: Number(from_telephone).toString(),
+            fromNumber: from_telephone,
           });
           await this.companyRepository.addPendingMesage(pendingMessage);
         } catch (err) {
           console.log("Duplicating pending message.");
         }
-        // continue;
+        continue; // ✅ esto es CLAVE
       }
 
-      // Send whatsapp message
       const response = await this.communicationService.sendFirstMessage({
         idUser: params.idCompany,
         companyName: company?.companyName,
@@ -183,8 +221,8 @@ export class SendStartingMessage {
       if (response.message) {
         const chat = Chat.create({
           idUser: debtor.id_user,
-          fromCellphone: Number(from_telephone),
-          toCellphone: Number(telephoneWithCountryCode),
+          fromCellphone: fromNum,
+          toCellphone: toNum,
           message: response.message || "",
         });
         await this.chatRepository.save(chat);
@@ -193,7 +231,7 @@ export class SendStartingMessage {
       debtor.addEvent("Se contactó al deudor por whatsapp");
       await this.debtorRepository.save(debtor);
 
-      console.log("Se proceso el mensaje de inicio para el deudor", debtor.id);
+      console.log("✅ Se procesó el mensaje de inicio para el deudor", debtor.id);
     }
   }
 }

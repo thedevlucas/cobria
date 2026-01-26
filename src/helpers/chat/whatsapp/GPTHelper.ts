@@ -56,14 +56,60 @@ export async function getContextMessages(
       : await getCallChat(idUser, debtorCellphone, true);
 
   const contextMessages: Array<Record<string, any>> = [gptPromptsJson["laws"]];
+  
+  // Collect admin feedback instructions to add as priority context
+  const adminFeedbackInstructions: string[] = [];
 
   for (const chat of chats) {
     if (chat.message && chat.message.trim() !== "") {
+      let messageText = chat.message;
+      
+      // Extract AI context data if present (for AI to use)
+      if (messageText.includes('[AI_CONTEXT_INTERNAL]')) {
+        // Extract the JSON from the internal marker
+        const match = messageText.match(/\[AI_CONTEXT_INTERNAL\](.*?)\[\/AI_CONTEXT_INTERNAL\]/);
+        if (match && match[1]) {
+          // Add the JSON context as a model message for AI understanding
+          contextMessages.push({
+            role: "model",
+            parts: [{ text: `${match[1]}\n${gptPromptsJson.initial_json.parts[0].text}` }],
+          });
+        }
+        continue; // Don't add the raw internal message
+      }
+      
+      // Extract admin feedback for AI instructions
+      if (messageText.includes('[ADMIN_FEEDBACK]')) {
+        const feedbackMatch = messageText.match(/\[ADMIN_FEEDBACK\](.*?)\[\/ADMIN_FEEDBACK\]/);
+        if (feedbackMatch && feedbackMatch[1]) {
+          try {
+            const feedbackData = JSON.parse(feedbackMatch[1]);
+            if (feedbackData.instruction) {
+              adminFeedbackInstructions.push(feedbackData.instruction);
+            }
+          } catch (e) {
+            // If JSON parse fails, use the raw text
+            adminFeedbackInstructions.push(feedbackMatch[1]);
+          }
+        }
+        continue; // Don't add admin feedback as regular message
+      }
+      
       contextMessages.push({
         role: chat.from_cellphone === twilio_whatsapp_number ? "model" : "user",
-        parts: [{ text: chat.message }],
+        parts: [{ text: messageText }],
       });
     }
+  }
+
+  // Add admin feedback as priority instructions if any exist
+  if (adminFeedbackInstructions.length > 0) {
+    contextMessages.push({
+      role: "user",
+      parts: [{ 
+        text: `INSTRUCCIONES PRIORITARIAS DEL ADMINISTRADOR (DEBES SEGUIR ESTAS INSTRUCCIONES):\n${adminFeedbackInstructions.map((f, i) => `${i + 1}. ${f}`).join('\n')}\n\nEstas instrucciones tienen prioridad sobre las reglas generales.` 
+      }],
+    });
   }
 
   if (typeChat != "whatsapp") {
@@ -85,6 +131,7 @@ export async function sendContextMessage(
     const responseText = result.response.text();
     return responseText;
   } catch (error) {
+    console.error(error);
     const error_response = {
       userResponse:
         "Desafortunadamente, el servicio ha sido un error. Póngase en contacto más tarde. Haremos nuestro mejor esfuerzo para contactarlo lo antes posible.",

@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+const MODEL_NAME = "gemini-2.5-flash";
 
 export interface AIConfig {
   apiKey: string;
@@ -59,7 +60,7 @@ export class AIService {
       console.warn("⚠️ API Key de Gemini no encontrada. La IA no funcionará correctamente.");
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    this.model = this.genAI.getGenerativeModel({ model: MODEL_NAME });
   }
 
   async generateCollectionMessage(context: CollectionContext): Promise<AIResponse> {
@@ -173,5 +174,5 @@ export class AIService {
 
 export const defaultAIConfig: AIConfig = {
   apiKey: process.env.GEMINI_API_KEY || '', 
-  model: 'gemini-1.5-flash'
+  model: MODEL_NAME
 };
