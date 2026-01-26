@@ -21,6 +21,9 @@ import {
   CardContent,
   InputAdornment,
   Button,
+  Collapse,
+  Drawer,
+  Divider,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -34,7 +37,9 @@ import {
   Person as PersonIcon,
   Message as MessageIcon,
   PersonAdd as PersonAddIcon,
-  Face2 as Face2Icon
+  Face2 as Face2Icon,
+  Feedback as FeedbackIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -44,6 +49,9 @@ import QuickAddPhone from '../../components/chat/QuickAddPhone';
 import EnhancedCreatePhone from '../../components/dialog/EnhancedCreatePhone';
 import { getAndTransformDebtors } from '../../helpers/chat/ModifyDebtor';
 import { jwtDecode } from "jwt-decode";
+
+import AIFeedbackSystem from '../../components/chat/AIFeedbackSystem';
+import { SmartToy as SmartToyIcon } from '@mui/icons-material';
 
 // Enhanced Chat Interfaces
 interface ChatMessage {
@@ -103,7 +111,6 @@ const Chat: React.FC = () => {
   const [statistics, setStatistics] = useState<ChatStatistics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
   // New state for debtor contacts
   const [debtors, setDebtors] = useState<Debtor[]>([]);
   const [showAddContact, setShowAddContact] = useState(false);
@@ -113,6 +120,15 @@ const Chat: React.FC = () => {
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  //AI Feedback
+  const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
+  const handleAIMessageGenerated = (suggestedMessage: string) => {
+    setNewMessage(suggestedMessage); 
+  };
+  const handleFeedbackSubmitted = (feedback: any) => {
+    console.log("Feedback registrado:", feedback);
+  };
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -295,6 +311,39 @@ const Chat: React.FC = () => {
       case 'video': return <VideoCallIcon />;
       case 'audio': return <PhoneIcon />;
       default: return <MessageIcon />;
+    }
+  };
+
+  //send feedback to AI
+
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [sendingFeedback, setSendingFeedback] = useState(false);
+
+  const sendFeedback = async () => {
+    if (!feedbackText.trim() || !selectedConversation) return;
+
+    try {
+      setSendingFeedback(true);
+      const token = Cookies.get('token');
+
+      await axios.post(
+        `${API_URL}/api/enhanced-chat/feedback`, 
+        { 
+          debtorId: selectedConversation.phone_number, 
+          feedback: feedbackText 
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Éxito
+      setFeedbackText('');
+      setShowFeedback(false);
+    } catch (err: any) {
+      console.error('Error sending feedback:', err);
+      setError('Error al enviar el feedback');
+    } finally {
+      setSendingFeedback(false);
     }
   };
 
@@ -533,7 +582,22 @@ const Chat: React.FC = () => {
                       </Typography>
                     </Box>
                   </Box>
+                  
                   <Box>
+                    {/* Botón de Asistente IA */}
+                    <Tooltip title="Asistente de Cobranza IA">
+                      <Button 
+                        variant={isAIPanelOpen ? "contained" : "outlined"} 
+                        color="primary" 
+                        size="small" 
+                        startIcon={<SmartToyIcon />}
+                        onClick={() => setIsAIPanelOpen(!isAIPanelOpen)}
+                        sx={{ mr: 1 }}
+                      >
+                        Analizar
+                      </Button>
+                    </Tooltip>
+
                     <IconButton onClick={() => loadChatHistory(selectedConversation.phone_number)}>
                       <RefreshIcon />
                     </IconButton>
@@ -544,10 +608,10 @@ const Chat: React.FC = () => {
                 <Box 
                   sx={{ 
                     flex: 1, 
-                    overflowY: 'auto', // Forzar scroll vertical
-                    overflowX: 'hidden', // Evitar scroll horizontal
+                    overflowY: 'auto', 
+                    overflowX: 'hidden',
                     p: 2,
-                    display: 'flex', // Asegura que el contenido se comporte bien
+                    display: 'flex',
                     flexDirection: 'column'
                   }}
                 >
@@ -644,6 +708,43 @@ const Chat: React.FC = () => {
         </Grid>
       </Grid>
 
+      {/* Drawer para el Sistema de IA */}
+      <Drawer
+        anchor="right"
+        open={isAIPanelOpen}
+        onClose={() => setIsAIPanelOpen(false)}
+        PaperProps={{
+          sx: { width: { xs: '100%', md: 450 }, p: 2 }
+        }}
+      >
+        {selectedConversation ? (
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h5" color="primary" sx={{ display: 'flex', alignItems: 'center' }}>
+                <SmartToyIcon sx={{ mr: 1 }} /> Asistente IA
+              </Typography>
+              <IconButton onClick={() => setIsAIPanelOpen(false)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+            
+            <Divider sx={{ mb: 2 }} />
+
+            <AIFeedbackSystem
+              debtorId={selectedDebtor?.id || 0}
+              debtorName={selectedConversation.debtor_name}
+              currentMessage={newMessage}
+              onMessageGenerated={handleAIMessageGenerated}
+              onFeedbackSubmitted={handleFeedbackSubmitted}
+            />
+          </Box>
+        ) : (
+          <Box sx={{ p: 3, textAlign: 'center' }}>
+            <Typography>Selecciona una conversación para activar el asistente.</Typography>
+          </Box>
+        )}
+      </Drawer>
+
       {/* Error Alert */}
       {error && (
         <Alert severity="error" onClose={() => setError(null)} sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1000 }}>
@@ -662,7 +763,6 @@ const Chat: React.FC = () => {
       {/* Quick Add Phone Component */}
       <QuickAddPhone 
         onPhoneCreated={() => {
-          // Refresh debtors when a new phone is created
           loadDebtorsWithCellphones();
         }}
       />

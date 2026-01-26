@@ -59,7 +59,7 @@ interface AIFeedback {
   personalized_approach: string;
   risk_assessment: string;
   legal_recommendations?: string;
-  follow_up_schedule: {
+  follow_up_schedule?: { // Marcado como opcional (?) para evitar errores de tipo
     next_contact: string;
     method: 'whatsapp' | 'sms' | 'call' | 'email';
     timing: string;
@@ -325,31 +325,33 @@ const AIFeedbackSystem: React.FC<Props> = ({
               </AccordionDetails>
             </Accordion>
 
-            {/* Follow-up Schedule */}
-            <Accordion 
-              expanded={expandedSections.followup}
-              onChange={() => toggleSection('followup')}
-            >
-              <AccordionSummary expandIcon={<ExpandMore />}>
-                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                  <Assessment color="secondary" />
-                  <Typography variant="subtitle1" sx={{ ml: 1, flexGrow: 1 }}>
-                    Plan de Seguimiento
+            {/* Follow-up Schedule (CORREGIDO: SE RENDERIZA SOLO SI EXISTE) */}
+            {aiFeedback.follow_up_schedule && (
+              <Accordion 
+                expanded={expandedSections.followup}
+                onChange={() => toggleSection('followup')}
+              >
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <Assessment color="secondary" />
+                    <Typography variant="subtitle1" sx={{ ml: 1, flexGrow: 1 }}>
+                      Plan de Seguimiento
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>Próximo contacto:</strong> {aiFeedback.follow_up_schedule.next_contact}
                   </Typography>
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Próximo contacto:</strong> {aiFeedback.follow_up_schedule.next_contact}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Método:</strong> {aiFeedback.follow_up_schedule.method.toUpperCase()}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Timing:</strong> {aiFeedback.follow_up_schedule.timing}
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>Método:</strong> {aiFeedback.follow_up_schedule.method?.toUpperCase() || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Timing:</strong> {aiFeedback.follow_up_schedule.timing}
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
+            )}
 
             {/* Legal Recommendations */}
             {aiFeedback.legal_recommendations && (
