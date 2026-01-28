@@ -70,42 +70,44 @@ export class AIService {
 
 
   private buildCollectionPrompt(context: CollectionContext): string {
-    
-    const feedbackSection = context.admin_feedback && context.admin_feedback.length > 0
-      ? `\n🔴 INSTRUCCIONES PRIORITARIAS DEL SUPERVISOR (FEEDBACK):\n${context.admin_feedback.map(f => `- ${f}`).join('\n')}\n(Estas instrucciones sobreescriben cualquier otra regla).`
-      : "";
+    // 1. Detectamos el último mensaje real del usuario para priorizarlo
+    const lastInteraction = context.previous_interactions[context.previous_interactions.length - 1];
+    const lastUserMessage = lastInteraction?.is_from_debtor ? lastInteraction.message : "(Inicio de conversación)";
 
-    const whatsappRules = context.collection_channel === 'whatsapp'
-      ? `\n📱 REGLAS ESTRICTAS PARA WHATSAPP:
-         - NO menciones el monto exacto de la deuda (ej: no digas "$500").
-         - NO ofrezcas descuentos por escrito.
-         - Si el usuario pide el monto, invítalo a una llamada o dile que revise su estado de cuenta.`
-      : "";
+    // 2. Definimos reglas dinámicas según si ya hay historial o no
+    const hasHistory = context.previous_interactions.length > 1;
+    const toneInstruction = hasHistory 
+      ? "NO saludes nuevamente tipo 'Hola soy...'. Ve directo al grano o responde la pregunta."
+      : "Saluda cordialmente y preséntate.";
 
     return `
-      Actúa como un experto asistente de cobranzas. Genera un mensaje para el deudor basándote en el siguiente contexto.
-
-      ${feedbackSection}
-      ${whatsappRules}
+      Actúa como un asistente de cobranzas profesional, empático pero firme.
+      Tu nombre es Asistente Virtual.
 
       INFORMACIÓN DEL DEUDOR:
       - Nombre: ${context.debtor_name}
       - Estado: ${context.payment_status}
-      - Días de Atraso: ${context.days_overdue}
-      - Etapa: ${context.collection_stage}
+      - Deuda Total: $${context.debt_amount}
       
-      HISTORIAL DE CHAT:
-      ${context.previous_interactions.map(i => `${i.is_from_debtor ? 'Deudor' : 'Agente'}: ${i.message}`).join('\n')}
+      CONTEXTO ACTUAL:
+      El usuario acaba de escribir: "${lastUserMessage}"
+      
+      HISTORIAL DE CHAT (Úsalo para entender el contexto, pero RESPONDE al mensaje de arriba):
+      ${context.previous_interactions.map(i => `[${i.is_from_debtor ? 'USUARIO' : 'AGENTE'}]: ${i.message}`).join('\n')}
 
-      Genera una respuesta JSON (sin markdown) con esta estructura exacta:
+      INSTRUCCIONES CLAVE:
+      1. ${toneInstruction}
+      2. Si el usuario hace una pregunta, RESPÓNDELA.
+      3. Si el usuario pone una excusa, empatiza brevemente y pide una fecha de pago.
+      4. Si el usuario ya dijo que va a pagar, confirma los detalles.
+      5. NO repitas el mismo mensaje que enviaste la última vez.
+      
+      Genera una respuesta JSON estrictamente con esta estructura (sin markdown):
       {
-        "message": "Tu mensaje sugerido para el deudor",
-        "strategy": "Estrategia usada",
-        "urgency": "low|medium|high|critical",
-        "next_action": "Siguiente paso",
-        "probability": 0.5,
-        "risk": "Riesgo",
-        "follow_up": "Fecha sugerida"
+        "message": "Tu respuesta al usuario aquí",
+        "strategy": "Negotiation|Reminder|Closing",
+        "urgency": "low|medium|high",
+        "next_action": "Acción siguiente sugerida"
       }
     `;
   }
