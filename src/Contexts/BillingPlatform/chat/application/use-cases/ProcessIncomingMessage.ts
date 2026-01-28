@@ -1,4 +1,4 @@
-import { twilio_whatsapp_number } from "../../../../../config/Constants";
+import { twilio_whatsapp_number, excelColumns } from "../../../../../config/Constants";
 import {
   getContextMessages,
 } from "../../../../../helpers/chat/whatsapp/GPTHelper";
@@ -9,6 +9,7 @@ import {
 } from "../../../../../helpers/chat/whatsapp/WhatsAppHelper";
 import { Debtor } from "../../../../../models/Debtor";
 import { Cost } from "../../../../../models/Cost"; 
+import { Chat as ChatModel } from "../../../../../models/Chat"; // Modelo de Mongoose para queries directas
 import { CostRepository } from "../../../cost/domain/CostRepository";
 import { PaymentStatus } from "../../../debtor/domain/Debtor";
 import { DebtorRepository } from "../../../debtor/domain/DebtorRepository";
@@ -18,8 +19,67 @@ import { Communication } from "../../domain/Communication";
 import { ProcessImageMessage } from "../services/ProcessImageMessage";
 import { SendWhatsappMessage } from "../services/SendWhatsappMessage";
 
-// IMPORTAMOS EL SERVICIO DE IA
 import { AIService, CollectionContext } from "../../../../../services/ai/LLAMAService";
+
+function extractDebtAmountFromContext(messages: any[]): number {
+  const columnsConfig = JSON.parse(excelColumns());
+  const debtAlternatives = columnsConfig.required_alternatives["saldo int. mora legal"] || [];
+  
+  for (const msg of messages) {
+    const content = msg.message || msg.content || msg.text || '';
+    
+    const match = content.match(/\[AI_CONTEXT_INTERNAL\](.*?)\[\/AI_CONTEXT_INTERNAL\]/);
+    if (match && match[1]) {
+      try {
+        const contextData = JSON.parse(match[1]);
+        
+        for (const key of Object.keys(contextData)) {
+          const lowerKey = key.toLowerCase();
+          if (debtAlternatives.some((alt: string) => lowerKey.includes(alt.toLowerCase()))) {
+            const amount = parseFloat(String(contextData[key]).replace(/[^0-9.-]/g, ''));
+            if (!isNaN(amount) && amount > 0) {
+              console.log(`💰 Monto de deuda extraído: ${amount} desde columna "${key}"`);
+              return amount;
+            }
+          }
+        }
+        
+        for (const [key, value] of Object.entries(contextData)) {
+          if (typeof value === 'number' && value > 0) {
+            console.log(`💰 Monto de deuda (fallback): ${value} desde columna "${key}"`);
+            return value;
+          }
+          if (typeof value === 'string') {
+            const numValue = parseFloat(value.replace(/[^0-9.-]/g, ''));
+            if (!isNaN(numValue) && numValue > 100) { 
+              console.log(`💰 Monto de deuda (fallback string): ${numValue} desde columna "${key}"`);
+              return numValue;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing AI context:", e);
+      }
+    }
+  }
+  
+  return 0;
+}
+
+function extractDebtorInfoFromContext(messages: any[]): Record<string, any> | null {
+  for (const msg of messages) {
+    const content = msg.message || msg.content || msg.text || '';
+    const match = content.match(/\[AI_CONTEXT_INTERNAL\](.*?)\[\/AI_CONTEXT_INTERNAL\]/);
+    if (match && match[1]) {
+      try {
+        return JSON.parse(match[1]);
+      } catch (e) {
+        console.error("Error parsing debtor info:", e);
+      }
+    }
+  }
+  return null;
+}
 
 export class ProcessIncomingMessage {
   private readonly sendWhatsappMessageService: SendWhatsappMessage;
@@ -37,7 +97,7 @@ export class ProcessIncomingMessage {
       this.communicationService,
       this.costRepository
     );
-    // Asegúrate de tener tu API KEY aquí o en variables de entorno
+
     this.aiService = new AIService(process.env.GEMINI_API_KEY || "");
   }
 
@@ -68,7 +128,6 @@ export class ProcessIncomingMessage {
       return;
     }
 
-    // --- 1. REGISTRO DE COSTOS ---
     try {
       await Cost.create({
         id_user: debtor.id_user,
@@ -85,9 +144,7 @@ export class ProcessIncomingMessage {
       console.error("❌ Error al registrar el costo:", error);
     }
 
-    // --- 2. MANEJO DE IMÁGENES O TEXTO ---
     if (params.media.message_type === "image") {
-      // Lógica de imágenes intacta...
       const imageToBuffer = await image2Buffer(params.media.image);
       const chat = Chat.create({
         idUser: debtor.id_user,
@@ -98,10 +155,8 @@ export class ProcessIncomingMessage {
         imageType: params.media.image_type,
       });
       await this.chatRepository.save(chat);
-      // Nota: Si es imagen, podrías querer detener el flujo aquí o dejar que la IA responda algo genérico.
-      // Por ahora dejamos que continúe.
     } else {
-      // Guardamos el mensaje del usuario en BD
+
       const chat = Chat.create({
         idUser: debtor.id_user,
         fromCellphone: Number(toNumber),
@@ -111,24 +166,32 @@ export class ProcessIncomingMessage {
       await this.chatRepository.save(chat);
     }
 
-    // --- 3. PREPARACIÓN DE IA (SOLUCIÓN "MEMORIA CORTA") ---
+    const rawChats = await ChatModel.find({
+      $or: [
+        { id_user: debtor.id_user, to_cellphone: Number(toNumber) },
+        { id_user: debtor.id_user, from_cellphone: Number(toNumber) },
+      ],
+    }).sort({ createdAt: 1 });
+    const debtAmount = extractDebtAmountFromContext(rawChats);
+    const debtorInfo = extractDebtorInfoFromContext(rawChats);
     
-    // Obtenemos historial previo
+    console.log(`💰 Monto de deuda encontrado para ${debtor.name}: $${debtAmount}`);
+    if (debtorInfo) {
+      console.log(`📋 Información del deudor del Excel:`, JSON.stringify(debtorInfo).substring(0, 200));
+    }
+
     const dbHistory = await getContextMessages(
       debtor.id_user,
       Number(toNumber),
       "whatsapp"
     );
 
-    // Mapeamos y aseguramos orden cronológico
     const formattedHistory = dbHistory.map((msg: any) => ({
         message: msg.content || msg.text || msg.message,
         is_from_debtor: msg.role === 'user',
         timestamp: msg.createdAt || new Date().toISOString()
-    })).reverse(); // Asumiendo que getContextMessages los trae del más nuevo al más viejo
+    })).reverse();
 
-    // IMPORTANTE: Agregamos manualmente el mensaje actual al historial que ve la IA.
-    // Esto asegura que la IA sepa qué acaba de escribir el usuario, incluso si la BD es lenta.
     formattedHistory.push({
         message: params.message,
         is_from_debtor: true,
@@ -137,12 +200,12 @@ export class ProcessIncomingMessage {
 
     const aiContext: CollectionContext = {
       debtor_name: debtor.name,
-      debtor_document: String(debtor.document), // Corrección de tipo: number -> string
-      payment_status: debtor.status,
-      debt_amount: 0, // TODO: Reemplazar con llamada real a tu repositorio de Facturas/Deudas
+      debtor_document: String(debtor.document),
+      payment_status: debtor.status || debtor.paid || "Pending",
+      debt_amount: debtAmount, 
       days_overdue: 30,
       collection_channel: 'whatsapp',
-      previous_interactions: formattedHistory, // Usamos el historial con el mensaje inyectado
+      previous_interactions: formattedHistory,
       debtor_profile: {
         payment_history: "Standard",
         communication_preference: "Whatsapp"
@@ -175,21 +238,13 @@ export class ProcessIncomingMessage {
       idUser: debtor.id_user,
     });
 
-    // Creamos el objeto Chat para el bot
     const chatBot = Chat.create({
         idUser: debtor.id_user,
         fromCellphone: Number(fromNumber),
         toCellphone: Number(toNumber),
         message: messageToSend, 
     });
-
-    // CORRECCIÓN DUPLICADOS:
-    // Si tus mensajes se duplicaban en la web, es porque `sendWhatsappMessageService` YA guarda el mensaje.
-    // Comentamos este save manual. Si notas que ahora NO aparecen, descoméntalo.
-    
-    // await this.chatRepository.save(chatBot); <--- COMENTADO PARA EVITAR DUPLICADOS
-
-    // Actualizamos info del deudor basada en la IA
+ 
     if (aiResponse.next_action) {
          if (debtor.events && debtor.events.length > 4000) debtor.events = debtor.events.substring(0, 4000); 
          debtor.addEvent(`[IA] ${aiResponse.next_action}`);

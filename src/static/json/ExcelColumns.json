@@ -12,6 +12,22 @@
     "required_alternatives": {
         "nombre": ["name", "nombre", "client name", "debtor name", "cliente", "full name", "debtor", "customer", "client", "full name"],
         "cedula": ["cedula", "id", "document", "documento", "dni", "rut", "ci", "debtor id", "customer id", "client id", "invoice num", "invoice number"],
-        "saldo int. mora legal": ["saldo", "debt", "amount", "monto", "deuda", "balance", "amount due", "total", "outstanding", "remaining", "saldo int. mora legal", "saldo int mora legal", "amount owed", "due amount", "balance", "amount due", "amount paid", "amount owed", "amount due"]
+        "saldo int. mora legal": [
+            "valor al inicio mes $",
+            "valor al inicio mes s/.",
+            "saldo",
+            "debt",
+            "amount",
+            "monto",
+            "deuda",
+            "balance",
+            "amount due",
+            "total",
+            "outstanding",
+            "remaining",
+            "amount owed",
+            "due amount",
+            "amount paid"
+        ]
     }
 }

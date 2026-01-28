@@ -408,13 +408,10 @@ static async getAIFeedback(debtorId: number, userId: number): Promise<AIFeedback
         .sort({ createdAt: -1 })
         .limit(20);
 
-      // Extract admin feedback from messages
       const adminFeedbackInstructions: string[] = [];
       const conversationMessages: any[] = [];
-
       for (const msg of recentMessages) {
         if (msg.message && msg.message.includes('[ADMIN_FEEDBACK]')) {
-          // Extract feedback instruction
           const match = msg.message.match(/\[ADMIN_FEEDBACK\](.*?)\[\/ADMIN_FEEDBACK\]/);
           if (match && match[1]) {
             try {
@@ -438,7 +435,7 @@ static async getAIFeedback(debtorId: number, userId: number): Promise<AIFeedback
         debt_amount: 500,
         days_overdue: 30,
         collection_channel: 'whatsapp',
-        admin_feedback: adminFeedbackInstructions, // Include admin feedback!
+        admin_feedback: adminFeedbackInstructions, 
         previous_interactions: conversationMessages.slice(0, 10).map((msg: any) => ({
           message: msg.message,
           is_from_debtor: msg.from_cellphone === phoneNumber,
@@ -477,8 +474,6 @@ static async submitAIFeedback(params: {
       if (!debtor) throw new Error('Deudor no encontrado');
 
       const phoneNumber = Number(debtor.cellphones[0].number);
-
-      // Store feedback in the proper format for AI to consume
       await Chat.create({
         id_user: userId,
         from_cellphone: 0,

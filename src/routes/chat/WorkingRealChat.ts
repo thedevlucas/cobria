@@ -1,4 +1,4 @@
-// Working Real Chat Route - No Dependencies
+// Working Real Chat Route - Con MongoDB COMPLETO
 import express from 'express';
 
 const router = express.Router();
@@ -6,7 +6,7 @@ const router = express.Router();
 // Simple middleware for testing
 const simpleAuth = (req: any, res: any, next: any) => {
   // For now, just add a mock user ID
-  req.body = { idUser: 1 };
+  req.body.idUser = req.body.idUser || 1;
   next();
 };
 
@@ -107,47 +107,125 @@ router.post('/send', simpleAuth, async (req, res) => {
   }
 });
 
-// Get AI feedback and suggestions
+// Get AI feedback and suggestions - REAL CON IA
 router.get('/ai-feedback/:debtorId', simpleAuth, async (req, res) => {
   try {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔵 GET /ai-feedback/:debtorId LLAMADO');
+    
     const { debtorId } = req.params;
     const { idUser } = req.body;
     
-    // Mock AI feedback
-    const feedback = {
-      suggested_message: "Hola, le contactamos para coordinar el pago de su deuda. ¿Podríamos programar una llamada?",
-      collection_strategy: "Enfoque empático con opciones de pago claras",
-      urgency_level: "medium",
-      next_action: "Enviar recordatorio amigable",
-      payment_probability: 0.75,
-      personalized_approach: "Usar tono empático y ofrecer opciones de pago flexibles",
-      risk_assessment: "Bajo riesgo - deudor tiene historial de pago positivo"
-    };
+    console.log('🔵 debtorId:', debtorId);
+    console.log('🔵 idUser:', idUser);
+    
+    // Importar servicios necesarios
+    const { RealChatService } = require('../../services/chat/RealChatService');
+    
+    console.log('🔵 Llamando a RealChatService.getAIFeedback...');
+    
+    // Usar el servicio REAL
+    const feedback = await RealChatService.getAIFeedback(parseInt(debtorId), idUser);
+    
+    console.log('✅ Feedback de IA obtenido');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
     res.json({
       success: true,
       data: feedback
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+  } catch (error: any) {
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('❌ ERROR en GET /ai-feedback:', error);
+    console.error('❌ Stack:', error.stack);
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
-// Submit feedback to AI
+// Submit feedback to AI - REAL CON MONGODB
 router.post('/ai-feedback', simpleAuth, async (req, res) => {
   try {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🟢 POST /ai-feedback RECIBIDO');
+    console.log('🟢 Body:', JSON.stringify(req.body, null, 2));
+    
     const { debtorId, feedback, message } = req.body;
     const { idUser } = req.body;
+    
+    console.log('🟢 debtorId:', debtorId);
+    console.log('🟢 feedback:', feedback);
+    console.log('🟢 idUser:', idUser);
+    
+    // Importar modelos necesarios
+    const { Debtor } = require('../../models/Debtor');
+    const { Cellphone } = require('../../models/Cellphone');
+    const { Chat } = require('../../models/Chat');
+    
+    console.log('🟢 Buscando deudor...');
+    
+    // Buscar el deudor con sus celulares
+    const debtor = await Debtor.findOne({
+      where: { id: debtorId },
+      include: [{
+        model: Cellphone,
+        as: 'cellphones'
+      }]
+    });
+    
+    console.log('🟢 Debtor encontrado:', debtor ? 'SÍ' : 'NO');
+    
+    if (!debtor) {
+      console.log('❌ Deudor no encontrado');
+      return res.status(404).json({ error: 'Deudor no encontrado' });
+    }
+    
+    console.log('🟢 Cellphones:', JSON.stringify(debtor.cellphones));
+    
+    if (!debtor.cellphones || debtor.cellphones.length === 0) {
+      console.log('⚠️ Deudor no tiene celulares');
+      return res.status(400).json({ error: 'Deudor no tiene números de teléfono' });
+    }
+    
+    const phoneNumber = Number(debtor.cellphones[0].number);
+    console.log('🟢 phoneNumber:', phoneNumber);
+    
+    console.log('🟢 Guardando en MongoDB Chat...');
+    
+    // Guardar en MongoDB
+    const chatRecord = await Chat.create({
+      id_user: idUser,
+      from_cellphone: 0,
+      to_cellphone: phoneNumber,
+      message: `[ADMIN_FEEDBACK]${JSON.stringify({
+        instruction: feedback,
+        category: 'instruction',
+        timestamp: new Date().toISOString()
+      })}[/ADMIN_FEEDBACK]`,
+      message_type: 'text',
+      cost: 0,
+      is_from_debtor: false,
+      ai_feedback: feedback,
+      collection_stage: 'feedback',
+    });
+    
+    console.log('✅ Guardado en MongoDB con ID:', chatRecord._id);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
     res.json({
       success: true,
       data: {
         success: true,
-        message: 'Feedback submitted successfully'
+        message: 'Feedback guardado en MongoDB correctamente',
+        mongoId: chatRecord._id
       }
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+  } catch (error: any) {
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('❌ ERROR:', error);
+    console.error('❌ Stack:', error.stack);
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
@@ -183,5 +261,3 @@ router.get('/statistics', simpleAuth, async (req, res) => {
 });
 
 export default router;
-
-
