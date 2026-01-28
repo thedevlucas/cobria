@@ -296,11 +296,18 @@ function DropZone(): JSX.Element {
     );
     const file = new File([excelBlob], "modified_excel.xlsx");
 
+    //ARG code fix for whatsapp
+    let countryCodeToSend = selectedCountry?.phone || defaultCountryCode.phone;
+  
+    if (countryCodeToSend === "54" && source === "whatsapp") {
+      countryCodeToSend = "549";
+    }
+
     uploadFile(
       file,
       navigate,
       source,
-      selectedCountry?.phone,
+      countryCodeToSend,
       selectedClient,
       selectedNumber
     );
