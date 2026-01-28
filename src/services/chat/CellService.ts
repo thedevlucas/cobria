@@ -2,6 +2,8 @@
 import { Cellphone } from "../../models/Cellphone";
 import { User } from "../../models/User";
 import { Debtor } from "../../models/Debtor";
+import { database } from "../../config/Database";
+import type { Transaction } from "sequelize";
 // Schemas
 import { cellphoneInterface } from "../../schemas/CellphoneSchema";
 // Custom error
@@ -44,22 +46,45 @@ export async function createCellphone(
     throw new httpError("No se encontró el cliente o no tienes permisos", 404);
   }
 
-  const exists = await Cellphone.findOne({
-    where: {
-      number: number,
-      id_debtor: id_debtor
-    }
+  const existingCellphones = await Cellphone.findAll({
+    where: { id_debtor: debtor.id },
   });
 
-  if (exists) {
+  const alreadyExistsSameNumber = existingCellphones.some(
+    (c: any) => String(c.number) === String(number)
+  );
+
+  if (alreadyExistsSameNumber) {
     throw new httpError("Este número ya está registrado para este cliente", 400);
   }
 
-  await Cellphone.create({ 
-    number: number, 
-    from: number, 
-    to: number,
-    id_debtor: debtor.id,
+  await database.transaction(async (transaction: Transaction) => {
+
+    for (const oldCellphone of existingCellphones) {
+      try {
+        await deleteChat(
+          idUser,
+          Number((oldCellphone as any).from),
+          Number((oldCellphone as any).to)
+        );
+      } catch (error) {
+        console.log(
+          "No se pudieron borrar los chats asociados al teléfono anterior, continuando..."
+        );
+      }
+
+      await (oldCellphone as any).destroy({ transaction });
+    }
+
+    await Cellphone.create(
+      {
+        number: number,
+        from: number,
+        to: number,
+        id_debtor: debtor.id,
+      },
+      { transaction }
+    );
   });
   
   return { message: "Celular creado exitosamente" };

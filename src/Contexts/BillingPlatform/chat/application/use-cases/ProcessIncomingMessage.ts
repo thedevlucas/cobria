@@ -59,9 +59,9 @@ export class ProcessIncomingMessage {
     const toNumber = this.removeWhatsappPrefix(params.debtorNumber);
 
     const debtor = await this.debtorRepository.findByCellphone(
-      Number(toNumber),
-      Number(toNumber)
-    );
+  Number(fromNumber),
+  Number(toNumber)
+);
 
     if (!debtor) {
       console.warn(`Deudor no encontrado para el número ${toNumber}`);

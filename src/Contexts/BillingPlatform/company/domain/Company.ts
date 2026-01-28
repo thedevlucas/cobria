@@ -150,6 +150,20 @@ export class Company extends AggregateRoot {
       this.pendingMessages = [];
     }
 
+    const alreadyExists = this.pendingMessages.some(
+      (pm) =>
+        pm.company_id === pendingMessage.company_id &&
+        pm.phone_number === pendingMessage.phone_number &&
+        pm.message === pendingMessage.message &&
+        pm.type === pendingMessage.type &&
+        pm.status === pendingMessage.status &&
+        pm.from_number === pendingMessage.from_number
+    );
+
+    if (alreadyExists) {
+      return;
+    }
+
     this.pendingMessages.push(pendingMessage);
   }
 

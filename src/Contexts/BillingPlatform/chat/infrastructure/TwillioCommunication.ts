@@ -5,7 +5,6 @@ import {
   auth_token_twilio,
   backend_host,
   gptPromptsJson,
-  twilio_whatsapp_number,
 } from "../../../../config/Constants";
 import { TWILIO_WHATSAPP_TEMPLATES } from "../../../../config/Twillio";
 import { Client } from "../../company/domain/Client";
@@ -19,6 +18,45 @@ export class TwillioCommunication implements Communication {
     this.twilioClient = twilio(account_sid, auth_token_twilio);
   }
 
+  private cleanDigits(input: string): string {
+    return (input || "").toString().replace(/\D/g, "");
+  }
+
+  private formatWhatsapp(phone: string): string {
+    const digits = this.cleanDigits(phone);
+
+    if (!digits || digits.length < 10 || digits.length > 15) {
+      throw new Error("Invalid WhatsApp phone number");
+    }
+
+    return `whatsapp:+${digits}`;
+  }
+
+  private buildGreetingText(debtorName: string, companyName?: string, client?: Client | null): string {
+    const base = (gptPromptsJson?.prompt_greeting || "").toString();
+    const msg = base.replace(/\$\{debtorName\}/g, (debtorName || "").toString());
+
+    if (client) {
+      const cName = (client?.name ?? "").toString();
+      const cPhone = (client?.phone ?? "").toString();
+      const cAddress = (client?.address ?? "").toString();
+      const comp = (companyName ?? "").toString();
+
+      const extra = [
+        comp ? `Empresa: ${comp}` : "",
+        cName ? `Cliente: ${cName}` : "",
+        cPhone ? `Teléfono: ${cPhone}` : "",
+        cAddress ? `Dirección: ${cAddress}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      return extra ? `${msg}\n\n${extra}` : msg;
+    }
+
+    return msg;
+  }
+
   async makePhoneCall(params: {
     from: string;
     to: string;
@@ -28,8 +66,8 @@ export class TwillioCommunication implements Communication {
     const language = gptPromptsJson.language;
 
     await this.twilioClient.calls.create({
-      from: "+" + params.from,
-      to: "+" + params.to,
+      from: "+" + this.cleanDigits(params.from),
+      to: "+" + this.cleanDigits(params.to),
       twiml: `<Response>
                         <Gather input="speech" language="${language}" actionOnEmptyResult="true" action="${backend_host}/api/call/incoming">
                             <Say language="${language}">${params.message}</Say>
@@ -47,8 +85,8 @@ export class TwillioCommunication implements Communication {
   }): Promise<{ cost: string }> {
     const response = await this.twilioClient.messages.create({
       body: params.message,
-      from: `whatsapp:+${Number(params.from)}`,
-      to: `whatsapp:+${Number(params.to)}`,
+      from: this.formatWhatsapp(params.from),
+      to: this.formatWhatsapp(params.to),
     });
 
     return { cost: response.price };
@@ -64,35 +102,79 @@ export class TwillioCommunication implements Communication {
   }): Promise<{ cost: number; message: string }> {
     let response: MessageInstance;
 
-    const fromNumber = Number(params.from);
-    const toNumber = Number(params.to);
+    const fromNumber = this.formatWhatsapp(params.from);
+    const toNumber = this.formatWhatsapp(params.to);
+
+    const trySendTemplate = async (
+      contentSid: string,
+      variables: Record<string, string>
+    ): Promise<MessageInstance> => {
+      return await this.twilioClient.messages.create({
+        contentSid,
+        contentVariables: JSON.stringify(variables),
+        from: fromNumber,
+        to: toNumber,
+      });
+    };
+
+    const tryFallbackBody = async (): Promise<MessageInstance> => {
+      const body = this.buildGreetingText(params.debtorName, params.companyName, params.client);
+      return await this.twilioClient.messages.create({
+        body,
+        from: fromNumber,
+        to: toNumber,
+      });
+    };
 
     if (params.client) {
-      response = await this.twilioClient.messages.create({
-        contentSid: TWILIO_WHATSAPP_TEMPLATES.GREETINGS_MESSAGE_WITH_CLIENT,
-        contentVariables: JSON.stringify({
-          1: params.debtorName,
-          2: params.companyName,
-          3: params.client.name,
-          4: params.client.name,
-          5: params.client.phone,
-          6: params.client.address,
-          7: params.client.name,
-        }),
-        from: `whatsapp:+${fromNumber}`,
-        to: `whatsapp:+${toNumber}`,
-      });
-      return { cost: Number(response.price) || 0, message: response.body };
+      const companyName = (params.companyName ?? "").toString();
+      const clientName = (params.client?.name ?? "").toString();
+      const clientPhone = (params.client?.phone ?? "").toString();
+      const clientAddress = (params.client?.address ?? "").toString();
+      const debtorName = (params.debtorName ?? "").toString();
+
+      const candidates: Record<string, string>[] = [
+        { "1": debtorName, "2": companyName, "3": clientName, "4": clientName, "5": clientPhone, "6": clientAddress, "7": clientName },
+      ];
+
+      for (const vars of candidates) {
+        try {
+          response = await trySendTemplate(
+            TWILIO_WHATSAPP_TEMPLATES.GREETINGS_MESSAGE_WITH_CLIENT,
+            vars
+          );
+          return { cost: Number(response.price) || 0, message: response.body };
+        } catch (err: any) {
+          if (err?.code !== 21656) throw err;
+        }
+      }
+
+      response = await tryFallbackBody();
+      return { cost: Number(response.price) || 0, message: response.body || this.buildGreetingText(params.debtorName, params.companyName, params.client) };
     }
 
-    response = await this.twilioClient.messages.create({
-      contentSid: TWILIO_WHATSAPP_TEMPLATES.GREETINGS_MESSAGE,
-      contentVariables: JSON.stringify({ 1: params.debtorName }),
-      from: `whatsapp:+${fromNumber}`,
-      to: `whatsapp:+${toNumber}`,
-    });
+    const debtorName = (params.debtorName ?? "").toString();
 
-    return { cost: Number(response.price) || 0, message: response.body };
+    const candidates: Record<string, string>[] = [
+      { "1": debtorName },
+      { "2": debtorName },
+      { "1": debtorName, "2": debtorName },
+    ];
+
+    for (const vars of candidates) {
+      try {
+        response = await trySendTemplate(
+          TWILIO_WHATSAPP_TEMPLATES.GREETINGS_MESSAGE,
+          vars
+        );
+        return { cost: Number(response.price) || 0, message: response.body };
+      } catch (err: any) {
+        if (err?.code !== 21656) throw err;
+      }
+    }
+
+    response = await tryFallbackBody();
+    return { cost: Number(response.price) || 0, message: response.body || this.buildGreetingText(params.debtorName) };
   }
 
   async sendSmsMessage(params: {
@@ -103,13 +185,13 @@ export class TwillioCommunication implements Communication {
   }): Promise<{ cost: number; message: string }> {
     const response = await this.twilioClient.messages.create({
       body: params.message,
-      from: `+${params.from}`,
-      to: `+${params.to}`,
+      from: `+${this.cleanDigits(params.from)}`,
+      to: `+${this.cleanDigits(params.to)}`,
     });
 
-    return { 
-      cost: Number(response.price) || 0.0075, // Twilio SMS cost is typically $0.0075
-      message: response.body || params.message 
+    return {
+      cost: Number(response.price) || 0.0075,
+      message: response.body || params.message,
     };
   }
 
@@ -120,13 +202,13 @@ export class TwillioCommunication implements Communication {
     subject: string;
     message: string;
   }): Promise<{ cost: number; message: string }> {
-    // For now, we'll use a placeholder implementation
-    // In a real implementation, you would integrate with an email service like SendGrid, AWS SES, etc.
-    console.log(`Email would be sent to ${params.to} with subject: ${params.subject}`);
-    
-    return { 
-      cost: 0.001, // Minimal cost for email
-      message: `Email sent to ${params.to}` 
+    console.log(
+      `Email would be sent to ${params.to} with subject: ${params.subject}`
+    );
+
+    return {
+      cost: 0.001,
+      message: `Email sent to ${params.to}`,
     };
   }
 

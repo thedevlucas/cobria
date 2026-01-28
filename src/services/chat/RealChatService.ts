@@ -175,8 +175,14 @@ export class RealChatService {
           for (const cellphone of debtor.cellphones) {
             const phoneNumber = Number(cellphone.number);
 
+// Find latest message that's not an internal/system message
             const latestMessage = await Chat.findOne({
-              $or: [{ from_cellphone: phoneNumber }, { to_cellphone: phoneNumber }],
+              $and: [
+                { $or: [{ from_cellphone: phoneNumber }, { to_cellphone: phoneNumber }] },
+                { message: { $not: /\[AI_CONTEXT_INTERNAL\]/ } },
+                { message: { $not: /\[ADMIN_FEEDBACK\]/ } },
+                { message: { $not: /^\[ADMIN FEEDBACK\]:/ } },
+              ]
             }).sort({ createdAt: -1 });
 
             const messageCount = await Chat.countDocuments({
@@ -216,7 +222,7 @@ export class RealChatService {
     }
   }
 
-  static async getChatHistory(debtorIdOrPhone: number, userId: number): Promise<ChatMessage[]> {
+static async getChatHistory(debtorIdOrPhone: number, userId: number): Promise<ChatMessage[]> {
     try {
       const debtor = await this.findDebtorSmart(debtorIdOrPhone, userId);
 
@@ -232,7 +238,38 @@ export class RealChatService {
         ],
       }).sort({ createdAt: 1 });
 
-      return messages.map((msg: any) => ({
+      // Filter out internal AI context messages and admin feedback from display
+      const filteredMessages = messages.filter((msg: any) => {
+        if (!msg.message) return false;
+        
+        // Skip internal AI context messages
+        if (msg.message.includes('[AI_CONTEXT_INTERNAL]')) {
+          return false;
+        }
+        // Skip admin feedback messages (these are for AI, not for display)
+        if (msg.message.includes('[ADMIN_FEEDBACK]')) {
+          return false;
+        }
+        // Skip old-style admin feedback markers
+        if (msg.message.startsWith('[ADMIN FEEDBACK]:')) {
+          return false;
+        }
+        // Skip messages that are pure JSON (legacy AI context)
+        if (msg.message.trim().startsWith('{') && (
+          msg.message.includes('"codigo empresa para cobro"') ||
+          msg.message.includes('"cedula"') ||
+          msg.message.includes('"nombre"') && msg.message.includes('"tipo de cartera"')
+        )) {
+          return false;
+        }
+        // Skip messages that contain the initial_json prompt text
+        if (msg.message.includes('Este es el json de la información del usuario')) {
+          return false;
+        }
+        return true;
+      });
+
+      return filteredMessages.map((msg: any) => ({
         id: msg._id.toString(),
         message: msg.message,
         from_cellphone: msg.from_cellphone,
@@ -358,7 +395,7 @@ export class RealChatService {
     }
   }
 
-  static async getAIFeedback(debtorId: number, userId: number): Promise<AIFeedback> {
+static async getAIFeedback(debtorId: number, userId: number): Promise<AIFeedback> {
     try {
       const debtor = await this.findDebtorSmart(debtorId, userId);
       if (!debtor) throw new Error('Debtor not found');
@@ -369,7 +406,30 @@ export class RealChatService {
         $or: [{ from_cellphone: phoneNumber }, { to_cellphone: phoneNumber }],
       })
         .sort({ createdAt: -1 })
-        .limit(10);
+        .limit(20);
+
+      // Extract admin feedback from messages
+      const adminFeedbackInstructions: string[] = [];
+      const conversationMessages: any[] = [];
+
+      for (const msg of recentMessages) {
+        if (msg.message && msg.message.includes('[ADMIN_FEEDBACK]')) {
+          // Extract feedback instruction
+          const match = msg.message.match(/\[ADMIN_FEEDBACK\](.*?)\[\/ADMIN_FEEDBACK\]/);
+          if (match && match[1]) {
+            try {
+              const feedbackData = JSON.parse(match[1]);
+              if (feedbackData.instruction) {
+                adminFeedbackInstructions.push(feedbackData.instruction);
+              }
+            } catch (e) {
+              adminFeedbackInstructions.push(match[1]);
+            }
+          }
+        } else if (!msg.message?.includes('[AI_CONTEXT_INTERNAL]')) {
+          conversationMessages.push(msg);
+        }
+      }
 
       const aiResponse = await aiService.generateCollectionMessage({
         debtor_name: debtor.name,
@@ -378,8 +438,8 @@ export class RealChatService {
         debt_amount: 500,
         days_overdue: 30,
         collection_channel: 'whatsapp',
-        admin_feedback: [],
-        previous_interactions: recentMessages.map((msg: any) => ({
+        admin_feedback: adminFeedbackInstructions, // Include admin feedback!
+        previous_interactions: conversationMessages.slice(0, 10).map((msg: any) => ({
           message: msg.message,
           is_from_debtor: msg.from_cellphone === phoneNumber,
           timestamp: msg.createdAt,
@@ -405,7 +465,7 @@ export class RealChatService {
     }
   }
 
-  static async submitAIFeedback(params: {
+static async submitAIFeedback(params: {
     debtorId: number;
     feedback: string;
     message: string;
@@ -418,11 +478,16 @@ export class RealChatService {
 
       const phoneNumber = Number(debtor.cellphones[0].number);
 
+      // Store feedback in the proper format for AI to consume
       await Chat.create({
         id_user: userId,
         from_cellphone: 0,
         to_cellphone: phoneNumber,
-        message: `[ADMIN FEEDBACK]: ${feedback}`,
+        message: `[ADMIN_FEEDBACK]${JSON.stringify({
+          instruction: feedback,
+          category: 'instruction',
+          timestamp: new Date().toISOString()
+        })}[/ADMIN_FEEDBACK]`,
         message_type: 'text',
         cost: 0,
         is_from_debtor: false,
@@ -430,7 +495,12 @@ export class RealChatService {
         collection_stage: 'feedback',
       });
 
-      return { success: true, message: 'Feedback registrado.' };
+      console.log(`✅ AI Feedback submitted for debtor ${debtorId}: ${feedback}`);
+
+      return { 
+        success: true, 
+        message: 'Feedback registrado. La IA usará esta instrucción en futuras respuestas para este deudor.' 
+      };
     } catch (error) {
       console.error('Error submitting AI feedback:', error);
       throw error;
