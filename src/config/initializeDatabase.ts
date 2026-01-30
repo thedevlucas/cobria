@@ -5,14 +5,19 @@ import { Cellphone } from "../models/Cellphone";
 import { Cost } from "../models/Cost";
 import { PendingMessage } from "../models/PendingMessage";
 import { Company } from "../models/Company"; 
+import { Stage } from "../models/Stage"; 
+import { Campaign } from "../models/Campaign";
 
 export const initializeDatabase = async () => {
   try {
     await database.authenticate();
     console.log("✅ Connection to PostgreSQL has been established successfully.");
 
+    // Sincronizar tablas
     await Company.sync({ alter: true });
     await User.sync({ alter: true });
+    await Stage.sync({ alter: true }); 
+    await Campaign.sync({ alter: true }); 
     await Debtor.sync({ alter: true });
     await Cellphone.sync({ alter: true });
     await Cost.sync({ alter: true }); 

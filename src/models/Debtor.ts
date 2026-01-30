@@ -21,6 +21,14 @@ export const Debtor = database.define(
         key: "id",
       },
     },
+    id_stage: { 
+      type: DataTypes.BIGINT, 
+      allowNull: true 
+    },
+    id_campaign: { 
+      type: DataTypes.BIGINT, 
+      allowNull: true 
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,

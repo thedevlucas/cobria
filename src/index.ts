@@ -18,6 +18,7 @@ app.use(cors());
 // Models
 const { User } = require("./models/User");
 const { Debtor } = require("./models/Debtor");
+const { Stage } = require("./models/Stage");
 const { Cellphone } = require("./models/Cellphone");
 const { Chat } = require("./models/Chat");
 const CallChat = require("./models/CallChat");
@@ -166,6 +167,13 @@ async function loadRoutes() {
     console.log("✅ Collection Workflow route loaded");
   } catch (error) {
     console.error("❌ Failed to load Collection Workflow route:", error);
+  }
+
+  try {
+    app.use("/api/collection", require("./routes/collection/CollectionManagement"));
+    console.log("✅ Collection Management route loaded");
+  } catch (error) {
+    console.error("❌ Failed to load Collection Management route:", error);
   }
 
   try {

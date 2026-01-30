@@ -7,10 +7,23 @@ import { debtImages } from "./DebtImage";
 import { Company } from "./Company";
 import { Cost } from "./Cost"; 
 import { PendingMessage } from "./PendingMessage";
+import { Stage } from "./Stage"; 
+import { Campaign } from "./Campaign";
 
 // --- DEBTOR & USER ---
 User.hasMany(Debtor, { onDelete: "cascade", foreignKey: "id_user" });
 Debtor.belongsTo(User, { foreignKey: "id_user" });
+
+// --- USER & STAGES ---
+User.hasMany(Stage, { onDelete: "cascade", foreignKey: "id_user" });
+Stage.belongsTo(User, { foreignKey: "id_user" });
+
+// --- RELACIONES DE CAMPAÑAS ---
+User.hasMany(Campaign, { foreignKey: "id_user", as: "campaigns" });
+Campaign.belongsTo(User, { foreignKey: "id_user" });
+
+Campaign.hasMany(Debtor, { foreignKey: "id_campaign", as: "debtors" });
+Debtor.belongsTo(Campaign, { foreignKey: "id_campaign", as: "campaign" });
 
 // --- DEBTOR & PHONES ---
 Debtor.hasMany(Cellphone, { 
