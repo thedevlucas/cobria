@@ -30,9 +30,16 @@ export class ValidateScheduleConfig {
       return false;
     }
 
-    const startTime = moment(schedule.startTime, "HH:mm");
-    const endTime = moment(schedule.endTime, "HH:mm");
-    const formattedNowTime = moment(currentTime, "HH:mm");
+    const timeFormats = ["HH:mm", "H:mm", "hh:mm A", "h:mm A"];
+    const startTime = moment(schedule.startTime, timeFormats);
+    const endTime = moment(schedule.endTime, timeFormats);
+    const formattedNowTime = moment(currentTime, timeFormats);
+
+    // Añade una validación de seguridad
+    if (!startTime.isValid() || !endTime.isValid()) {
+      console.log(`❌ Horario configurado inválido para empresa ${idCompany}: ${schedule.startTime} - ${schedule.endTime}`);
+      return false; 
+    }
 
     console.log("startTime", startTime);
     console.log("endTime", endTime);

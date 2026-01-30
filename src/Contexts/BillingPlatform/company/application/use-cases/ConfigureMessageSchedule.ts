@@ -12,6 +12,10 @@ export class ConfigureMessageScheduling {
     endTime: string;
     timezone: string;
   }) {
+    if (!params.startTime || !params.endTime || params.daysOfWeek.length === 0) {
+      throw new Error("Datos de horario incompletos");
+    }
+
     const company = await this.companyRepository.findById(params.companyId);
 
     if (!company) {
