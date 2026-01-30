@@ -450,6 +450,7 @@ function DropZone(): JSX.Element {
           <Button
             variant="contained"
             color="primary"
+            disabled={!fromTime || !toTime || selectedDays.length === 0}
             onClick={() => {
               postMyDateSelect({ selectedDays, fromTime, toTime });
               setIsModalDateOpen(false);
