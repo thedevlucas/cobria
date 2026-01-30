@@ -34,7 +34,7 @@ export const Debtor = database.define(
       allowNull: true,
     },
     events: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: true,
     },
     paid: {

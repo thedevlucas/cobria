@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
 import xlsx from "xlsx";
-import { verifyToken } from "../Token";
+import { verifyToken } from "../../helpers/Token";
 import { errorHandler } from "../../config/CustomError";
 
 const router = Router();
@@ -29,4 +29,4 @@ router.post(
   }
 );
 
-export default router;
+module.exports = router;
