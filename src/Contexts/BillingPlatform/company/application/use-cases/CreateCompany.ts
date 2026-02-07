@@ -19,8 +19,8 @@ export class CreateCompany {
       password: params.password,
       role: params.role,
       email: params.email,
-      cellphone: params.cellphone || 0,
-      telephone: params.telephone || 0,
+      cellphone: params.cellphone || null,
+      telephone: params.telephone || null,
       isCollectionCompany: params.isCollectionCompany,
       companyName: params.companyName,
     });

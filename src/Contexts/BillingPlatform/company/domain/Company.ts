@@ -18,8 +18,8 @@ export class Company extends AggregateRoot {
   email: string;
   companyName: string;
   active: boolean;
-  cellphone: number;
-  telephone: number;
+  cellphone: number | null;
+  telephone: number | null;
   isCollectionCompany: boolean;
   clients!: Client[];
   schedules!: MessagesSchedule[];
@@ -33,8 +33,8 @@ export class Company extends AggregateRoot {
     role: Role,
     email: string,
     active: boolean,
-    cellphone: number,
-    telephone: number,
+    cellphone: number | null,
+    telephone: number | null,
     isCollectionCompany: boolean,
     companyName: string
   ) {
@@ -57,8 +57,8 @@ export class Company extends AggregateRoot {
     password: string;
     role: Role;
     email: string;
-    cellphone: number;
-    telephone: number;
+    cellphone: number | null;
+    telephone: number | null;
     isCollectionCompany: boolean;
     companyName: string;
   }): Company {
@@ -81,8 +81,8 @@ export class Company extends AggregateRoot {
     password: string;
     role: Role;
     email: string;
-    cellphone: number;
-    telephone: number;
+    cellphone: number | null;
+    telephone: number | null;
     isCollectionCompany: boolean;
     companyName: string;
   }): Company {

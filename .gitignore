@@ -1,7 +1,7 @@
 # =================================
 # BACKEND GITIGNORE
 # =================================
-
+#First Run
 # Environment Variables (CRITICAL - DO NOT COMMIT)
 .env
 .env.local

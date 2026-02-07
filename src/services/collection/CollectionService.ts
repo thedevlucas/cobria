@@ -7,7 +7,7 @@ import { Op } from 'sequelize';
 import { User } from '../../models/User';
 
 export class CollectionService {
-  static async getCollectionStages(userId: number) {
+  static async getCollectionStages(userId: number): Promise<any[]> {
     const dbStages = await Stage.findAll({ where: { id_user: userId }, order: [['order', 'ASC']] });
 
     // Si no hay etapas, crear las básicas
@@ -20,7 +20,7 @@ export class CollectionService {
       return this.getCollectionStages(userId);
     }
 
-    return Promise.all(dbStages.map(async (s) => ({
+    return Promise.all(dbStages.map(async (s: any) => ({
       id: s.id.toString(),
       name: s.name,
       description: s.description || 'Sin descripción',
@@ -35,8 +35,8 @@ export class CollectionService {
     const debtors = await Debtor.findAll({ where: { id_user: userId }, include: [{ model: Cellphone, as: 'cellphones' }] });
     const stages = await Stage.findAll({ where: { id_user: userId } });
 
-    return debtors.map(d => {
-      const currentStage = stages.find(s => s.id.toString() === d.id_stage?.toString());
+    return debtors.map((d: any) => {
+      const currentStage = stages.find((s: any) => s.id.toString() === d.id_stage?.toString());
       const diff = Math.abs(Date.now() - new Date(d.updatedAt).getTime());
       return {
         id: Number(d.id),
@@ -103,7 +103,7 @@ export class CollectionService {
           where: { id_campaign: c.id },
           attributes: ['id']
         });
-        const debtorIds = debtors.map(d => d.id);
+        const debtorIds = debtors.map((d: any) => d.id);
         console.log(`Campaña "${c.name}" tiene los deudores IDs: [${debtorIds}]`);
 
         // 2. Sumamos montos

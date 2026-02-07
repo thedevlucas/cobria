@@ -1,4 +1,4 @@
-import { AggregateRoot } from "../../../Shared/domain/AggregateRoot";
+import { AggregateRoot } from "../../../../../Shared/domain/AggregateRoot";
 
 export enum PaymentStatus {
   PENDING = "pending",
