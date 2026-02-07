@@ -22,9 +22,6 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Divider,
-  IconButton,
-  Tooltip,
   Rating,
   Accordion,
   AccordionSummary,
@@ -87,7 +84,6 @@ interface AIInsights {
 
 interface Props {
   debtorId: number;
-  debtorName: string;
   currentMessage?: string;
   onMessageGenerated: (message: string) => void;
   onFeedbackSubmitted: (feedback: FeedbackSubmission) => void;
@@ -95,7 +91,6 @@ interface Props {
 
 const AIFeedbackSystem: React.FC<Props> = ({
   debtorId,
-  debtorName,
   currentMessage,
   onMessageGenerated,
   onFeedbackSubmitted
@@ -514,7 +509,7 @@ const AIFeedbackSystem: React.FC<Props> = ({
             </Typography>
             <Rating
               value={feedbackData.effectiveness_score}
-              onChange={(event, newValue) => {
+              onChange={(_, newValue) => {
                 setFeedbackData({...feedbackData, effectiveness_score: newValue || 5});
               }}
               max={10}

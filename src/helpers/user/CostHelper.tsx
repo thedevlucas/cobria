@@ -1,12 +1,11 @@
 // Dependencies
-import { NavigateFunction } from "react-router-dom";
 import axios from "axios";
 import Cookies from "js-cookie";
 import Swal from "sweetalert2";
 // Constants
 import { API_URL } from "../../constants/Constants";
 
-export async function getCost(_navigate: NavigateFunction) {
+export async function getCost() {
   try {
     const response = await axios.get(`${API_URL}/admin/costs`, {
       headers: {

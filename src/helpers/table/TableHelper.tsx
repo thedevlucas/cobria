@@ -38,7 +38,7 @@ export async function getDate(){
 }
 
 export async function formatDate2Csv(csvName:string){
-    let date = await getDate()
+    const date = await getDate()
     const colombianDate = dayjs.utc(date).tz("America/Bogota")
     return `${colombianDate.format("YYYY-MM-DD")}_${csvName}`
 }

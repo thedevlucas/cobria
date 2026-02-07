@@ -20,24 +20,18 @@ import {
   Alert,
   CircularProgress,
   InputAdornment,
-  IconButton,
-  Tooltip,
-  Autocomplete,
   FormControl,
   InputLabel,
   Select,
-  MenuItem,
-  Divider
+  MenuItem
 } from '@mui/material';
 import {
   Phone as PhoneIcon,
   Person as PersonIcon,
   Search as SearchIcon,
-  Add as AddIcon,
   Check as CheckIcon,
   Close as CloseIcon,
   Info as InfoIcon,
-  Warning as WarningIcon,
   CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 import axios from 'axios';
@@ -385,35 +379,9 @@ const EnhancedCreatePhone: React.FC<EnhancedCreatePhoneProps> = ({
     }));
   };
 
-  // Get selected country info
-  const getSelectedCountryInfo = () => {
-    return countryCodes.find(country => country.code === formData.countryCode);
-  };
 
-  // Get country-specific phone format help
-  const getPhoneFormatHelp = () => {
-    const country = getSelectedCountryInfo();
-    if (!country) return '';
-    
-    const examples = {
-      '593': 'Ejemplo: 9 1234 5678 o 09 1234 5678',
-      '58': 'Ejemplo: 4 1234 5678 o 04 1234 5678',
-      '57': 'Ejemplo: 3 1234 5678 o 03 1234 5678',
-      '51': 'Ejemplo: 9 1234 5678 o 09 1234 5678',
-      '54': 'Ejemplo: 9 1234 5678 o 09 1234 5678',
-      '56': 'Ejemplo: 9 1234 5678 o 09 1234 5678',
-      '55': 'Ejemplo: 11 91234 5678 o 21 91234 5678',
-      '52': 'Ejemplo: 55 1234 5678 o 81 1234 5678',
-      '1': 'Ejemplo: 555 123 4567',
-      '44': 'Ejemplo: 20 1234 5678 o 7700 123456',
-      '49': 'Ejemplo: 30 12345678 o 151 12345678',
-      '33': 'Ejemplo: 1 23 45 67 89 o 6 12 34 56 78',
-      '39': 'Ejemplo: 3 1234 5678 o 06 1234 5678',
-      '34': 'Ejemplo: 91 123 45 67 o 612 34 56 78'
-    };
-    
-    return examples[country.code as keyof typeof examples] || `Formato: ${country.format}`;
-  };
+
+
 
   const handleCreatePhone = async () => {
     try {

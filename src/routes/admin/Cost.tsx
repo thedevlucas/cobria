@@ -31,7 +31,7 @@ export default function Cost() {
   useEffect(() => {
     userRedirect(navigate);
 
-    getCost(navigate).then((data) => {
+    getCost().then((data) => {
       setData(data.data);
     });
   }, []);

@@ -16,7 +16,7 @@ import { crudDialogButton, crudDialogTextField } from "../../styles/CrudStyle";
 // Constants
 import { createClient, modifyClient } from "../../helpers/company/ClientHelper";
 
-export default function crudClient(
+export default function CrudClient(
   open: boolean,
   setOpen: React.Dispatch<React.SetStateAction<boolean>>,
   modifyRow: Record<string, any> | null,

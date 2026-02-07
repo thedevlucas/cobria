@@ -9,13 +9,11 @@ import {
   Tab,
   Fab,
   Tooltip,
-  Alert,
   CircularProgress,
   Grid,
   Card,
   CardContent,
   Chip,
-  IconButton,
   Menu,
   MenuItem,
   Dialog,
@@ -32,7 +30,6 @@ import {
   Settings as SettingsIcon,
   Refresh as RefreshIcon,
   Search as SearchIcon,
-  FilterList as FilterIcon,
   MoreVert as MoreVertIcon,
   Download as DownloadIcon,
   Upload as UploadIcon,
@@ -97,7 +94,6 @@ const EnhancedChatPage: React.FC = () => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [statistics, setStatistics] = useState<ChatStatistics | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -150,7 +146,7 @@ const EnhancedChatPage: React.FC = () => {
     }
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
@@ -241,12 +237,7 @@ const EnhancedChatPage: React.FC = () => {
           </Box>
         </Paper>
 
-        {/* Error Alert */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+
 
         {/* Statistics Cards */}
         {statistics && (

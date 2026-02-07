@@ -1,27 +1,20 @@
 // Quick Add Phone Component - Senior Developer Implementation
 import React, { useState } from 'react';
 import {
-  Fab,
   SpeedDial,
   SpeedDialAction,
   SpeedDialIcon,
   Tooltip,
   Box,
   Typography,
-  Chip,
-  Paper,
-  IconButton,
-  Badge
+  Paper
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Phone as PhoneIcon,
   PersonAdd as PersonAddIcon,
   ContactPhone as ContactPhoneIcon,
   Smartphone as SmartphoneIcon,
-  PhoneAndroid as PhoneAndroidIcon,
-  Close as CloseIcon,
-  Check as CheckIcon
+  Close as CloseIcon
 } from '@mui/icons-material';
 import EnhancedCreatePhone from '../dialog/EnhancedCreatePhone';
 

@@ -9,7 +9,6 @@ import {
   Tab,
   Fab,
   Tooltip,
-  Alert,
   CircularProgress
 } from '@mui/material';
 import {
@@ -58,7 +57,6 @@ const RealTimeDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check authentication
@@ -76,7 +74,7 @@ const RealTimeDashboardPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [navigate]);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
@@ -140,12 +138,7 @@ const RealTimeDashboardPage: React.FC = () => {
           </Box>
         </Paper>
 
-        {/* Error Alert */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+
 
         {/* Tabs */}
         <Paper sx={{ mb: 3 }}>

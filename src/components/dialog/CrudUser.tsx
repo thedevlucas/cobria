@@ -13,7 +13,7 @@ import { HandleNumberChange } from "../../helpers/HandleTextFieldChange";
 import { createUser, modifyUser } from "../../helpers/user/ModifyUser";
 
 
-export default function crudUser(open:boolean,setOpen:React.Dispatch<React.SetStateAction<boolean>>,
+export default function CrudUser(open:boolean,setOpen:React.Dispatch<React.SetStateAction<boolean>>,
     modifyRow:Record<string,any>|null, request: string
 ){
     // Variables

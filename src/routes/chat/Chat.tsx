@@ -21,7 +21,6 @@ import {
   CardContent,
   InputAdornment,
   Button,
-  Collapse,
   Drawer,
   Divider,
 } from '@mui/material';
@@ -38,7 +37,6 @@ import {
   Message as MessageIcon,
   PersonAdd as PersonAddIcon,
   Face2 as Face2Icon,
-  Feedback as FeedbackIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
 import axios from 'axios';
@@ -47,7 +45,7 @@ import { API_URL } from '../../constants/Constants';
 import MenuComponent from '../../components/menu/MenuComponent';
 import QuickAddPhone from '../../components/chat/QuickAddPhone';
 import EnhancedCreatePhone from '../../components/dialog/EnhancedCreatePhone';
-import { getAndTransformDebtors } from '../../helpers/chat/ModifyDebtor';
+
 import { jwtDecode } from "jwt-decode";
 
 import AIFeedbackSystem from '../../components/chat/AIFeedbackSystem';
@@ -314,38 +312,7 @@ const Chat: React.FC = () => {
     }
   };
 
-  //send feedback to AI
 
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackText, setFeedbackText] = useState('');
-  const [sendingFeedback, setSendingFeedback] = useState(false);
-
-  const sendFeedback = async () => {
-    if (!feedbackText.trim() || !selectedConversation) return;
-
-    try {
-      setSendingFeedback(true);
-      const token = Cookies.get('token');
-
-      await axios.post(
-        `${API_URL}/api/enhanced-chat/feedback`, 
-        { 
-          debtorId: selectedConversation.phone_number, 
-          feedback: feedbackText 
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Éxito
-      setFeedbackText('');
-      setShowFeedback(false);
-    } catch (err: any) {
-      console.error('Error sending feedback:', err);
-      setError('Error al enviar el feedback');
-    } finally {
-      setSendingFeedback(false);
-    }
-  };
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -732,7 +699,6 @@ const Chat: React.FC = () => {
 
             <AIFeedbackSystem
               debtorId={selectedDebtor?.id || 0}
-              debtorName={selectedConversation.debtor_name}
               currentMessage={newMessage}
               onMessageGenerated={handleAIMessageGenerated}
               onFeedbackSubmitted={handleFeedbackSubmitted}

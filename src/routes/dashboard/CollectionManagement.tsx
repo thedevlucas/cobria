@@ -10,7 +10,6 @@ import {
   Stepper,
   Step,
   StepLabel,
-  StepContent,
   Button,
   Chip,
   LinearProgress,
@@ -32,16 +31,13 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert,
-  Divider
+  Alert
 } from '@mui/material';
 import {
   PlayArrow,
   TrendingUp,
   AttachMoney,
   CheckCircle,
-  Warning,
-  Error,
   Info,
   Timeline,
   Group,
@@ -473,7 +469,7 @@ const CollectionManagementPage: React.FC = () => {
                       <TableCell align="center">
                         <Tooltip title="Registrar Pago">
                           <IconButton size="small" color="success" onClick={() => {
-                            setPaymentData({ debtor_id: debtor.id, amount: 0, debtor_name: debtor.name });
+                            setPaymentData({ debtor_id: debtor.id, amount: 0, debtor_name: debtor.name, type: 'agent' });
                             setShowPaymentDialog(true);
                           }}>
                             <Payments />

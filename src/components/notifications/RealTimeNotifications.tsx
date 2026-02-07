@@ -51,7 +51,6 @@ const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   const fetchNotifications = async () => {
     try {
@@ -259,7 +258,7 @@ const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
         open={snackbarOpen}
         autoHideDuration={6000}
         onClose={() => setSnackbarOpen(false)}
-        message={snackbarMessage}
+        message=""
       />
     </Card>
   );

@@ -15,34 +15,23 @@ import {
   Paper,
   Button,
   Avatar,
-  Badge,
   Chip,
-  Divider,
-  Fab,
   Tooltip,
-  Card,
-  CardContent,
-  CardActions,
   IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Alert,
   CircularProgress,
 } from "@mui/material";
 // Icons
 import SearchIcon from "@mui/icons-material/Search";
 import Face2Icon from "@mui/icons-material/Face2";
 import DeleteIcon from "@mui/icons-material/Delete";
-import AccountCircle from "@mui/icons-material/AccountCircle";
-import AddIcon from "@mui/icons-material/Add";
 import ChatIcon from "@mui/icons-material/Chat";
 import PhoneIcon from "@mui/icons-material/Phone";
 import MessageIcon from "@mui/icons-material/Message";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 // Helpers
 import {
   deleteTelephone,
@@ -59,11 +48,6 @@ import MenuComponent from "../../components/menu/MenuComponent";
 import EnhancedCreatePhone from "../../components/dialog/EnhancedCreatePhone";
 // Styles
 import {
-  textFieldSearchChatStyle,
-  iconChatStyle,
-  listItemTextChatStyle,
-  listHeaderChatStyle,
-  listItemTitleChatStyle,
   gridContainerStyle,
 } from "../../styles/ChatStyle";
 
@@ -81,7 +65,7 @@ interface Debtor {
   }>;
 }
 
-export default function callChat() {
+export default function CallChat() {
   const navigate = useNavigate();
   // Variables
   const [searchName, setSearchName] = useState<string>("");
@@ -568,7 +552,11 @@ export default function callChat() {
         >
           <DialogTitle>Agregar Nuevo Contacto</DialogTitle>
           <DialogContent>
-            <EnhancedCreatePhone onSuccess={handleAddContactSuccess} />
+            <EnhancedCreatePhone 
+              open={showAddContact}
+              onClose={() => setShowAddContact(false)}
+              onSuccess={handleAddContactSuccess}
+            />
           </DialogContent>
         </Dialog>
       </main>

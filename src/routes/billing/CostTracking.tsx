@@ -28,22 +28,18 @@ import {
   Select,
   MenuItem,
   Alert,
-  LinearProgress,
-  Divider
+  LinearProgress
 } from '@mui/material';
 import {
   TrendingUp,
-  TrendingDown,
   AttachMoney,
   Phone,
   Message,
   Email,
   Call,
   Download,
-  FilterList,
   Refresh,
-  Payment,
-  Receipt
+  Payment
 } from '@mui/icons-material';
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -106,7 +102,6 @@ const CostTrackingPage: React.FC = () => {
   const [filterPeriod, setFilterPeriod] = useState<string>('30');
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
-  const [retryCount, setRetryCount] = useState(0);
 
   // Mock data generation functions
   const generateMockCosts = (period: string): CostRecord[] => {
@@ -353,7 +348,6 @@ const CostTrackingPage: React.FC = () => {
                   size="small" 
                   onClick={() => {
                     setError(null);
-                    setRetryCount(prev => prev + 1);
                     loadCostData();
                   }}
                   sx={{ mr: 1 }}

@@ -8,35 +8,29 @@ import {
   Typography,
   Avatar,
   Chip,
-  Divider,
   List,
   ListItem,
   ListItemAvatar,
   ListItemText,
   ListItemSecondaryAction,
   Badge,
-  Tooltip,
   CircularProgress,
   Alert,
   Grid,
   Card,
   CardContent,
   InputAdornment,
-  Menu,
-  MenuItem,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Button
 } from '@mui/material';
-import QuickAddPhone from './QuickAddPhone';
+
 import {
   Send as SendIcon,
   Search as SearchIcon,
   MoreVert as MoreVertIcon,
-  Delete as DeleteIcon,
-  MarkAsUnread as MarkAsUnreadIcon,
   AttachFile as AttachFileIcon,
   Image as ImageIcon,
   VideoCall as VideoCallIcon,
@@ -96,7 +90,6 @@ const EnhancedChatComponent: React.FC = () => {
   const [statistics, setStatistics] = useState<ChatStatistics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null);
 
@@ -256,14 +249,7 @@ const EnhancedChatComponent: React.FC = () => {
     }
   };
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, conversation: Conversation) => {
-    setAnchorEl(event.currentTarget);
-    setConversationToDelete(conversation);
-  };
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
 
   const formatTimestamp = (timestamp: Date) => {
     return new Date(timestamp).toLocaleString();
@@ -392,7 +378,6 @@ const EnhancedChatComponent: React.FC = () => {
                   />
                   <ListItemSecondaryAction>
                     <IconButton
-                      onClick={(e) => handleMenuClick(e, conversation)}
                       size="small"
                     >
                       <MoreVertIcon />
@@ -426,7 +411,7 @@ const EnhancedChatComponent: React.FC = () => {
                     <IconButton onClick={() => loadChatHistory(selectedConversation.phone_number)}>
                       <RefreshIcon />
                     </IconButton>
-                    <IconButton onClick={(e) => handleMenuClick(e, selectedConversation)}>
+                    <IconButton>
                       <MoreVertIcon />
                     </IconButton>
                   </Box>
@@ -548,13 +533,7 @@ const EnhancedChatComponent: React.FC = () => {
         accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
       />
 
-      {/* Quick Add Phone Component */}
-      <QuickAddPhone 
-        onPhoneCreated={(phoneData) => {
-          // Refresh conversations when a new phone is created
-          loadConversations();
-        }}
-      />
+
     </Box>
   );
 };

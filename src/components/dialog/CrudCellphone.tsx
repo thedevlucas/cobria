@@ -1,18 +1,44 @@
 // Dependencies
 import { Dialog, DialogContent, DialogTitle,DialogActions,
     TextField, Button } from "@mui/material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 // Styles
 import { crudDialogButton, crudDialogTextField } from "../../styles/CrudStyle";
 // Helpers
 import { createCellphone } from "../../helpers/chat/ChatHelper";
 import { HandleNumberChange } from "../../helpers/HandleTextFieldChange";
 
-export default function crudCellphone(open:boolean,
+interface TokenPayload {
+    id: number;
+}
+
+export default function CrudCellphone(open:boolean,
     setOpen:React.Dispatch<React.SetStateAction<boolean>>
 ){
     const [document, setDocument] = useState<string>("")
     const [cellphone, setCellphone] = useState<string>("")
+    const [idToken, setIdToken] = useState<number>(0)
+
+    useEffect(() => {
+        const token = Cookies.get('token');
+        if (token) {
+            try {
+                const decoded = jwtDecode<TokenPayload>(token);
+                setIdToken(decoded.id);
+            } catch (e) {
+                console.error('Error decoding token:', e);
+            }
+        }
+    }, []);
+
+    const handleCreateCellphone = async () => {
+        if (idToken) {
+            await createCellphone({document: Number(document), cellphone: Number(cellphone)}, idToken);
+            setOpen(false);
+        }
+    }
 
     return (
         <Dialog
@@ -34,7 +60,7 @@ export default function crudCellphone(open:boolean,
             <DialogActions>
                 <Button variant="contained" sx={crudDialogButton} onClick={() => setOpen(false)}>Cancelar</Button>
                 <Button variant="contained" sx={crudDialogButton} 
-                onClick={() => createCellphone({document:Number(document),cellphone:Number(cellphone)})}
+                onClick={handleCreateCellphone}
                 >Crear</Button>
             </DialogActions>
         </Dialog>
