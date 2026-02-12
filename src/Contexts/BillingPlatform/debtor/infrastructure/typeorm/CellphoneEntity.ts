@@ -19,6 +19,7 @@ export const CellphoneEntity = new EntitySchema<Cellphone>({
       type: Number,
       nullable: false,
     },
+    number: { type: Number, nullable: false },
     id_debtor: {
       type: Number,
       nullable: false,
