@@ -64,9 +64,9 @@ const agentsColumns: GridColDef[] = [
     field: "expireAt",
     headerName: "Fecha de Vencimiento",
     flex: 1,
-    valueFormatter: (params) => {
-      if (!params.value) return "Pendiente";
-      return new Date(params.value).toLocaleDateString();
+    valueFormatter: (value: any) => {
+      if (!value) return "Pendiente";
+      return new Date(value).toLocaleDateString();
     },
   },
 ];
