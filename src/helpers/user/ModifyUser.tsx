@@ -74,14 +74,19 @@ export async function getAndTransformUsers() {
   return usersData;
 }
 
-export async function getAssociatedAgents() {
-  const response = await axios.get(`${API_URL}/admin/agents`, {
-    headers: {
-      Authorization: `Bearer ${Cookies.get("token")}`,
-    },
-  });
-  return response.data.data;
-}
+export const getAssociatedAgents = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/api/admin/agents`, {
+      headers: {
+        Authorization: `Bearer ${Cookies.get("token")}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error getting agents:", error);
+    return []; 
+  }
+};
 
 export async function createUser(data: Record<string, any>) {
   try {
