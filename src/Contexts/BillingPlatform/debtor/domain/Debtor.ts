@@ -96,7 +96,7 @@ export class Debtor extends AggregateRoot {
     this.telephones.push(new Telephone(from, to, this.id));
   }
 
-  addCellphone(from: number, to: number) {
+  addCellphone(from: number, to: number, number: number) {
     if (!this.cellphones) {
       this.cellphones = [];
     }
@@ -105,7 +105,7 @@ export class Debtor extends AggregateRoot {
       return;
     }
 
-    this.cellphones.push(new Cellphone(from, to, this.id));
+    this.cellphones.push(new Cellphone(from, to, number, this.id));
   }
 
   toPrimitives() {
