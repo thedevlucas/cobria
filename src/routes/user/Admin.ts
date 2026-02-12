@@ -125,7 +125,7 @@ router.post("/set-agent", verifyToken, checkAdmin, async (req, res) => {
       message: "Agente asociado a la compañía",
     });
   } catch (error) {
-    throw error;
+    errorHandler(error, res);
   }
 });
 
@@ -139,9 +139,8 @@ router.get(
         companyRepository
       );
       const agents = await getAgentsAssociated.run();
-      return res.send({
-        data: agents,
-      });
+      
+      return res.status(200).json(agents);
     } catch (error) {
       errorHandler(error, res);
     }

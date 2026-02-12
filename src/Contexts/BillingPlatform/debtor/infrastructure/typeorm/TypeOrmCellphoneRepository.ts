@@ -2,14 +2,16 @@ import { EntitySchema } from "typeorm";
 import { CellphoneRepository } from "../../domain/CellphoneRepository";
 import { TypeOrmRepository } from "../../../../Shared/infrastructure/typeorm/TypeOrmRepository";
 import { Cellphone } from "../../domain/Cellphone";
-import { AgentEntity } from "../../../agent/infrastructure/typeorm/AgentEntity";
+// CORRECCIÓN: Importar CellphoneEntity en lugar de AgentEntity
+import { CellphoneEntity } from "./CellphoneEntity"; 
 
 export class TypeOrmCellphoneRepository
   extends TypeOrmRepository<Cellphone>
   implements CellphoneRepository
 {
   protected entitySchema(): EntitySchema<Cellphone> {
-    return AgentEntity;
+    // CORRECCIÓN: Retornar CellphoneEntity
+    return CellphoneEntity; 
   }
 
   async save(cellphone: Cellphone): Promise<void> {

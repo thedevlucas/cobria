@@ -17,20 +17,19 @@ import { messageChatValidator } from "../../schemas/ChatSchema";
 import { GetChatsByUser } from "../../Contexts/BillingPlatform/chat/application/use-cases/GetChatsByUser";
 import { ProcessWorkbook } from "../../Contexts/BillingPlatform/debtor/application/use-cases/ProcessWorkbook";
 import { XlsxWorkbookProcessor } from "../../Contexts/BillingPlatform/debtor/infrastructure/XlsxWorkbookProcessor";
-import { SendStartingMessage } from "../../Contexts/BillingPlatform/debtor/application/services/SendStartingMessage";
 import {
   chatRepository,
   companyRepository,
   costRepository,
   debtorRepository,
+  agentRepository,      
+  pendingMessageRepository, 
+  cellphoneRepository
 } from "../../Contexts/Shared/infrastructure/dependencies";
 import { CreateDebtor } from "../../Contexts/BillingPlatform/debtor/application/use-cases/CreateDebtor";
 import { TwillioCommunication } from "../../Contexts/BillingPlatform/chat/infrastructure/TwillioCommunication";
-import { CreateChat } from "../../Contexts/BillingPlatform/chat/application/use-cases/CreateChat";
 import { WorkbookToJson } from "../../Contexts/BillingPlatform/debtor/application/services/WorkbookToJson";
 import { CompanyExistById } from "../../Contexts/BillingPlatform/company/domain/services/CompanyExistById";
-import { ValidateScheduleConfig } from "../../Contexts/BillingPlatform/debtor/application/services/ValidateScheduleConfig";
-import { ListMessageSchedule } from "../../Contexts/BillingPlatform/company/application/use-cases/ListMessageSchedule";
 import { ProcessIncomingMessage } from "../../Contexts/BillingPlatform/chat/application/use-cases/ProcessIncomingMessage";
 import { ProcessImageMessage } from "../../Contexts/BillingPlatform/chat/application/services/ProcessImageMessage";
 
@@ -66,20 +65,16 @@ router.post(
 
       const xlsxWorkbookProcessor = new XlsxWorkbookProcessor();
       const workbookToJsonService = new WorkbookToJson(xlsxWorkbookProcessor);
-      const sendStartingMessageService = new SendStartingMessage(
-        debtorRepository,
-        new CreateDebtor(debtorRepository),
-        new CreateChat(chatRepository),
-        new TwillioCommunication(),
-        new ValidateScheduleConfig(new ListMessageSchedule(companyRepository)),
-        costRepository,
-        companyRepository,
-        chatRepository
-      );
+      
+      const createDebtor = new CreateDebtor(debtorRepository);
       const processWorkbookUseCase = new ProcessWorkbook(
         workbookToJsonService,
-        sendStartingMessageService,
-        new CompanyExistById(companyRepository)
+        createDebtor,
+        pendingMessageRepository,
+        new CompanyExistById(companyRepository),
+        agentRepository,
+        cellphoneRepository,
+        chatRepository
       );
 
       await processWorkbookUseCase.run({

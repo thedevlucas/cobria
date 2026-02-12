@@ -31,9 +31,17 @@ export const PendingMessageEntity = new EntitySchema<PendingMessage>({
       type: String,
       nullable: false,
     },
+    attempts: {
+      type: Number,
+      default: 0,
+    },
     from_number: {
       type: String,
       nullable: true,
+    },
+    scheduled_at: { 
+      type: Date, 
+      nullable: true 
     },
   },
   relations: {
@@ -45,18 +53,5 @@ export const PendingMessageEntity = new EntitySchema<PendingMessage>({
       },
       inverseSide: "pendingMessages",
     },
-  },
-  indices: [
-    {
-      unique: true,
-      columns: [
-        "phone_number",
-        "from_number",
-        "status",
-        "message",
-        "type",
-        "company_id",
-      ],
-    },
-  ],
+  }
 });

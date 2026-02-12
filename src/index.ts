@@ -7,7 +7,7 @@ import { port } from "./config/Constants";
 import { database, mongoDB } from "./config/Database";
 import { initializeDatabase } from "./config/initializeDatabase";
 import "reflect-metadata";
-import "./jobs/scheduler";
+import { initScheduledJobs } from "./jobs/scheduler";
 
 const app = express();
 
@@ -287,6 +287,7 @@ async function startServer() {
     
     // Start the server
     const server = app.listen(port, () => {
+      initScheduledJobs();
       console.log("🎉 Server started successfully!");
       console.log(`📡 Server running on port: ${port}`);
       console.log(`🌐 Available endpoints:`);

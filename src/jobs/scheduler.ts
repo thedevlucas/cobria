@@ -1,29 +1,22 @@
 import cron from "node-cron";
 import { ProcessPendingMessages } from "../Contexts/BillingPlatform/chat/application/services/ProcessPendingMessages";
-import {
-  callChatRepository,
-  chatRepository,
-  companyRepository,
-  costRepository,
-  debtorRepository,
-  pendingMessageRepository,
-} from "../Contexts/Shared/infrastructure/dependencies";
 import { TwillioCommunication } from "../Contexts/BillingPlatform/chat/infrastructure/TwillioCommunication";
-import { ValidateScheduleConfig } from "../Contexts/BillingPlatform/debtor/application/services/ValidateScheduleConfig";
-import { ListMessageSchedule } from "../Contexts/BillingPlatform/company/application/use-cases/ListMessageSchedule";
+import { 
+  pendingMessageRepository,
+  chatRepository 
+} from "../Contexts/Shared/infrastructure/dependencies";
 
-cron.schedule("0 * * * *", async () => {
-  console.log("running a task every hour");
+export const initScheduledJobs = () => {
+  console.log("⏰ Inicializando Cron Jobs...");
 
-  const sendPendingMessages = new ProcessPendingMessages(
+  const processPendingMessages = new ProcessPendingMessages(
     pendingMessageRepository,
-    new ValidateScheduleConfig(new ListMessageSchedule(companyRepository)),
     new TwillioCommunication(),
-    costRepository,
-    debtorRepository,
-    callChatRepository,
-    chatRepository
+    chatRepository 
   );
 
-  await sendPendingMessages.run();
-});
+  // Ejecutar cada 5 segundos
+  cron.schedule("*/5 * * * * *", async () => {
+      await processPendingMessages.run();
+  });
+};

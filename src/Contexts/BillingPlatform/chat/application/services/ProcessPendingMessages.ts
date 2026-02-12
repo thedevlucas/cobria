@@ -1,106 +1,105 @@
-import { twilio_whatsapp_number } from "../../../../../config/Constants";
-import { CallChat } from "../../../../../models/CallChat";
 import { PendingMessageRepository } from "../../../company/domain/PendingMessageRepository";
-import { PendingMessageStatus } from "../../../company/domain/PendingMessages";
-import { Cost, CostType } from "../../../cost/domain/Cost";
-import { CostRepository } from "../../../cost/domain/CostRepository";
-import { ValidateScheduleConfig } from "../../../debtor/application/services/ValidateScheduleConfig";
-import { DebtorRepository } from "../../../debtor/domain/DebtorRepository";
-import { CallChatRepository } from "../../domain/CallChatRepository";
-import { Chat } from "../../domain/Chat";
+import { TwillioCommunication } from "../../infrastructure/TwillioCommunication";
+import { PendingMessageStatus, PendingMessageType } from "../../../company/domain/PendingMessages";
 import { ChatRepository } from "../../domain/ChatRepository";
-import { Communication } from "../../domain/Communication";
+import { Chat } from "../../domain/Chat";
 
 export class ProcessPendingMessages {
+  private isProcessing = false;
+
   constructor(
     private readonly pendingMessageRepository: PendingMessageRepository,
-    private readonly validateScheduleConfigService: ValidateScheduleConfig,
-    private readonly communicationService: Communication,
-    private readonly costRepository: CostRepository,
-    private readonly debtorRepository: DebtorRepository,
-    private readonly callChatRepository: CallChatRepository,
+    private readonly twillioCommunication: TwillioCommunication,
     private readonly chatRepository: ChatRepository
   ) {}
 
-  async run() {
-    const pendingMessages = await this.pendingMessageRepository.findAll();
+  async run(): Promise<void> {
+    if (this.isProcessing) return;
+    this.isProcessing = true;
 
-    for (const pendingMessage of pendingMessages) {
-      const isTimeToCommunicate = await this.validateScheduleConfigService.run({
-        idCompany: pendingMessage.company_id,
-      });
+    try {
+      // 1. Obtener mensajes listos
+      const pendingMessages = await this.pendingMessageRepository.findReadyToSend();
 
-      if (!isTimeToCommunicate) {
-        continue;
+      if (!pendingMessages || pendingMessages.length === 0) {
+        return; 
       }
 
-      const debtor = await this.debtorRepository.findByCellphone(
-        Number(pendingMessage.phone_number),
-        pendingMessage.company_id
-      );
+      console.log(`🚀 Cron: Procesando ${pendingMessages.length} mensajes...`);
 
-      if (!debtor) {
-        continue;
-      }
+      for (const msg of pendingMessages) {
+        try {
+          const rawFrom = String(msg.from_number || "");
+          const rawTo = String(msg.phone_number || "");
+          
+          const cleanFrom = rawFrom.replace(/\D/g, "");
+          const cleanTo = rawTo.replace(/\D/g, ""); 
 
-      const fromNumber = pendingMessage.from_number;
-      const toNumber = pendingMessage.phone_number;
+          if (!cleanTo) {
+             console.error(`❌ Error: Mensaje ID ${msg.id} no tiene número destino válido.`);
+             msg.status = PendingMessageStatus.ERROR;
+             await this.pendingMessageRepository.save(msg);
+             continue;
+          }
 
-      // process pending message
-      if (pendingMessage.type === "whatsapp") {
-        const response = await this.communicationService.sendFirstMessage({
-          idUser: pendingMessage.company_id,
-          from: fromNumber,
-          to: toNumber,
-          debtorName: debtor.name,
-        });
+          if (msg.type === PendingMessageType.WHATSAPP) {
+            await this.twillioCommunication.sendWhatsappMessage({
+              idUser: msg.company_id,
+              from: rawFrom,
+              to: rawTo,
+              message: msg.message,
+            });
 
-        const cost = Cost.create({
-          idCompany: pendingMessage.company_id,
-          amount: response.cost || 0.0339,
-          type: CostType.WHATSAPP,
-        });
-        await this.costRepository.save(cost);
+            console.log(`💾 Guardando chat para: ${cleanTo}`);
+            
+            const chat = Chat.create({
+              idUser: Number(msg.company_id),
+              fromCellphone: Number(cleanFrom),
+              toCellphone: Number(cleanTo), 
+              message: msg.message,
+            });
+            
+            await this.chatRepository.save(chat);
 
-        if (response.message) {
-          const chat = Chat.create({
-            idUser: debtor.id_user,
-            fromCellphone: Number(fromNumber),
-            toCellphone: Number(toNumber),
-            message: response.message,
-          });
-          await this.chatRepository.save(chat);
+          } else if (msg.type === PendingMessageType.SMS) {
+            await this.twillioCommunication.sendSmsMessage({
+              idUser: msg.company_id,
+              from: rawFrom,
+              to: rawTo,
+              message: msg.message,
+            });
+            
+            // Opcional: Guardar SMS también si quieres
+            /*
+            const chatSMS = Chat.create({
+              idUser: Number(msg.company_id),
+              fromCellphone: Number(cleanFrom),
+              toCellphone: Number(cleanTo),
+              message: `[SMS] ${msg.message}`,
+            });
+            await this.chatRepository.save(chatSMS);
+            */
+          }
+
+          // D. Marcar como enviado en Postgres
+          msg.status = PendingMessageStatus.SENT;
+          await this.pendingMessageRepository.save(msg);
+
+        } catch (error: any) {
+          console.error(`❌ Falló envío Msg ID ${msg.id}:`, error.message);
+          
+          msg.attempts = (msg.attempts || 0) + 1;
+          if (msg.attempts >= 3) {
+            msg.status = PendingMessageStatus.ERROR;
+          }
+          await this.pendingMessageRepository.save(msg);
         }
-      } else if (pendingMessage.type === "call") {
-        await this.communicationService.makePhoneCall({
-          from: fromNumber,
-          to: toNumber,
-          message: pendingMessage.message,
-          idUser: pendingMessage.company_id,
-        });
-
-        const cost = Cost.create({
-          idCompany: pendingMessage.company_id,
-          amount: 0.238,
-          type: CostType.CALL,
-        });
-
-        await this.costRepository.save(cost);
-
-        // Saving the call chat
-        const callChat = CallChat.create({
-          idUser: pendingMessage.company_id,
-          fromCellphone: fromNumber,
-          toCellphone: toNumber,
-          message: pendingMessage.message,
-        });
-
-        await this.callChatRepository.save(callChat);
       }
 
-      pendingMessage.updateStatus(PendingMessageStatus.SENT);
-
-      await this.pendingMessageRepository.save(pendingMessage);
+    } catch (err) {
+      console.error("🔥 Error crítico en Cron:", err);
+    } finally {
+      this.isProcessing = false;
     }
   }
 }
