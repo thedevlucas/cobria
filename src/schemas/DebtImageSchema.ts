@@ -8,4 +8,4 @@ export interface debtImageInterface{
 
 // Schemas
 
-export const debtImageSchema = ['Added', 'Paid']
+export const debtImageSchema = ['Added', 'Paid', 'Pending']

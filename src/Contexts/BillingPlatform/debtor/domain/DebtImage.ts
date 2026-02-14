@@ -1,6 +1,7 @@
 export enum DebtImageType {
   ADDED = "Added",
   PAID = "Paid",
+  PENDING = "Pending",
 }
 
 export class DebtImage {
