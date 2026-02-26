@@ -1,30 +1,36 @@
+/* front/static/css/user/Login.css */
+
 .login-all {
-  position: absolute;
+  /* Eliminamos position absolute para permitir el scroll si el formulario es largo */
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
+  min-height: 100vh; /* Permite que el fondo crezca con el contenido */
+  padding: 40px 0; /* Espacio de seguridad para móviles */
   background-color: #04005e;
+  box-sizing: border-box;
 }
 
 .login {
   position: relative;
-  width: 80%;
-
+  width: 90%; /* Más ancho en móviles */
+  max-width: 450px; /* Límite para que no se vea gigante en PC */
   background-color: white;
-  box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.75);
+  box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.3);
+  border-radius: 8px; /* Bordes suaves */
+  padding-bottom: 30px;
 }
+
 .login-elements {
   position: relative;
   display: flex;
   flex-direction: column;
-  margin: 5% 10% 0% 10%;
-  gap: 1vh;
-  height: 90%;
-  max-height: 90%;
+  /* Usamos padding en lugar de margin porcentual para control total */
+  padding: 30px 10% 10px 10%;
+  /* Cambiamos gap de vh a px para evitar que los inputs se pisen en pantallas bajas */
+  gap: 20px; 
+  height: auto; /* Quitamos el height 90% que causaba el solapamiento */
 }
 
 .login-images {
@@ -32,10 +38,13 @@
   justify-content: center;
   align-items: center;
   width: 100%;
+  margin-bottom: 10px;
 }
+
 .login-images img {
-  width: 10vw;
-  height: 10vw;
+  /* Unidades fijas para el logo para que no desaparezca en móviles */
+  width: 60px;
+  height: 60px;
 }
 
 #icon-text {
@@ -43,17 +52,44 @@
   font-weight: bold;
   font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
   color: #04005e;
+  margin-left: 10px;
+  font-size: 1.8rem; /* Tamaño de fuente estable */
 }
 
-.login-images p {
-  font-size: 3vw;
-}
-
+/* Ajuste para los textos de ayuda y enlaces */
 #href-account {
   text-align: center;
+  font-size: 0.9rem;
+  margin: 5px 0;
+  line-height: 1.4;
 }
 
 #href-account a {
   color: #04005e;
   text-decoration: none;
+  font-weight: bold;
+}
+
+#href-account a:hover {
+  text-decoration: underline;
+}
+
+/* Títulos en Recovery */
+h1 {
+  font-size: 1.4rem;
+  text-align: center;
+  color: #04005e;
+  margin-bottom: 10px;
+}
+
+/* Media Query para pantallas muy pequeñas (iPhone SE, etc) */
+@media (max-width: 380px) {
+  .login-elements {
+    padding: 20px 5%;
+    gap: 15px;
+  }
+  
+  #icon-text {
+    font-size: 1.5rem;
+  }
 }
