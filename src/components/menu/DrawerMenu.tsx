@@ -104,7 +104,7 @@ const UserMenu = ({ navigate }: Props) => {
       </ListItem>
 
       <ListItem key="Registro teléfono" disablePadding>
-        <ListItemButton onClick={() => navigate("/call-chat")}>
+        <ListItemButton onClick={() => navigate("/upload-excel")}>
           <ListItemIcon>
             <PermPhoneMsgIcon />
           </ListItemIcon>
