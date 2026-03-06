@@ -17,8 +17,11 @@ import {login} from "../../helpers/user/RegisterHelper"
 export default function Login(){
     const [email, setEmail] = useState<string>("")
     const[password, setPassword] = useState<string>("")
+    const [loading, setLoading] = useState<boolean>(false)
+
     const isEmailValid = EMAIL_REGEX.test(email);
     const navigate = useNavigate();
+    
     return (
         <div className="login-all">
             <div className = "login">
@@ -29,12 +32,24 @@ export default function Login(){
                     </div>
                     {EmailTextField(email,setEmail,isEmailValid)}
                     {InputTextPassword("Contraseña", password, setPassword)}
-                    <Button variant="contained" sx={styleButton} onClick={() => {
-                        login({
-                            email: email,
-                            password: password
-                        }, navigate)
-                    }}>Iniciar sesión</Button>
+                    <Button 
+                        variant="contained" 
+                        sx={styleButton} 
+                        disabled={loading}
+                        onClick={async () => {
+                            setLoading(true);
+                            try {
+                                await login({
+                                    email: email,
+                                    password: password
+                                }, navigate);
+                            } finally {
+                                setLoading(false);
+                            }
+                        }}
+                    >
+                        {loading ? "Cargando..." : "Iniciar sesión"}
+                    </Button>
                     <p id="href-account">¿No tienes una cuenta? <Link to="/register">Registrate</Link></p>
                     <p id="href-account">¿Olvidaste tu contraseña?<Link to="/password-recovery">Reinicia contraseña</Link></p>
                 </div>

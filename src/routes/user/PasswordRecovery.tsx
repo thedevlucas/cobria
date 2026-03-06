@@ -15,7 +15,10 @@ import { sendRecoveryLink } from "../../helpers/user/PasswordRecoveryHelper";
 
 export default function PasswordRecovery(){
     const [email,setEmail] = useState("");
+    const [loading, setLoading] = useState<boolean>(false);
+
     const isEmailValid = EMAIL_REGEX.test(email);
+
     return(
         <div className="login-all">
             <div className="login">
@@ -27,11 +30,23 @@ export default function PasswordRecovery(){
                     <h1>¿Olvidaste tu contraseña?</h1>
                     <p id="href-account">¿Recuerdas tu contraseña? <Link to="/">Inicia sesión</Link></p>
                     {EmailTextField(email,setEmail,isEmailValid)}
-                    <Button variant="contained" sx={styleButton} disabled={!isEmailValid} onClick={
-                        () => sendRecoveryLink({
-                            email: email
-                        })
-                    }>Cambiar contraseña</Button>
+                    <Button 
+                        variant="contained" 
+                        sx={styleButton} 
+                        disabled={!isEmailValid || loading} 
+                        onClick={async () => {
+                            setLoading(true);
+                            try {
+                                await sendRecoveryLink({ 
+                                    email: email
+                                });
+                            } finally {
+                                setLoading(false); 
+                            }
+                        }}
+                    >
+                        {loading ? "Enviando..." : "Cambiar contraseña"}
+                    </Button>
                 </div>
             </div>
         </div>

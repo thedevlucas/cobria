@@ -32,6 +32,7 @@ export default function Register() {
   const [isCollectionCompany, setIsCollectionCompany] = useState<string>("");
   const [accepted, setAccepted] = useState<boolean>(false);
   const [companyName, setCompanyName] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
   const isEmailValid = EMAIL_REGEX.test(email);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,18 +98,23 @@ export default function Register() {
           <Button
             variant="contained"
             sx={styleButton}
-            disabled={!isEmailValid || !accepted || !companyName}
-            onClick={() =>
-              register({
-                email: email,
-                name: name,
-                companyName: companyName,
-                password: password,
-                isCollectionCompany: isCollectionCompany === "yes", // Agregamos la respuesta aquí
-              })
-            }
+            disabled={!isEmailValid || !accepted || !companyName || loading}
+            onClick={async () => {
+              setLoading(true);
+              try {
+                  await register({
+                    email: email,
+                    name: name,
+                    companyName: companyName,
+                    password: password,
+                    isCollectionCompany: isCollectionCompany === "yes", 
+                  });
+              } finally {
+                  setLoading(false);
+              }
+            }}
           >
-            Registrar
+            {loading ? "Cargando..." : "Registrar"}
           </Button>
           <p id="href-account">
             ¿Ya tienes una cuenta? <Link to="/">Inicia sesión</Link>
