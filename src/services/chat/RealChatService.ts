@@ -525,7 +525,7 @@ static async submitAIFeedback(params: {
       });
 
       const pendingMessages = await PendingMessage.count({
-        where: { id_user: userId, status: 'pending' },
+        where: { company_id: userId, status: 'pending' },
       });
 
       return {
