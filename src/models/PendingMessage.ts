@@ -2,61 +2,57 @@ import { DataTypes } from "sequelize";
 import { database } from "../config/Database";
 
 export const PendingMessage = database.define(
-  "pending_message",
+  "pending_messages", 
   {
     id: {
-      type: DataTypes.BIGINT,
+      type: DataTypes.INTEGER, 
       autoIncrement: true,
       primaryKey: true,
     },
     company_id: {
-      type: DataTypes.BIGINT,
-      allowNull: false,
-      references: {
-        model: "company",
-        key: "id",
-      },
-    },
-    id_user: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "user",
-        key: "id"
-      }
+        model: "user", 
+        key: "id",
+      },
     },
     phone_number: {
-      type: DataTypes.BIGINT,
-      allowNull: false,
-    },
-    from_number: {
-      type: DataTypes.BIGINT,
+      type: DataTypes.STRING,
       allowNull: false,
     },
     message: {
-      type: DataTypes.TEXT,
+      type: DataTypes.STRING,
       allowNull: false,
     },
     type: {
-      type: DataTypes.ENUM("whatsapp", "call", "sms", "email"),
+      type: DataTypes.STRING,
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM("pending", "sent", "error"),
+      type: DataTypes.STRING,
       allowNull: false,
       defaultValue: "pending",
     },
-    createdAt: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+    from_number: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
     },
-    updatedAt: {
+    attempts: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    scheduled_at: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+      allowNull: true,
+      defaultValue: null,
     },
   },
   {
     sequelize: database,
-    tableName: "pending_message",
+    tableName: "pending_messages", 
+    timestamps: false, 
   }
 );
