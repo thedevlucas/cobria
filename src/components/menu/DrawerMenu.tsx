@@ -249,7 +249,7 @@ function BoxMenu(setOpen: React.Dispatch<React.SetStateAction<boolean>>) {
     >
       <List>
         <ListItem key="icon" disablePadding>
-          <ListItemButton>
+          <ListItemButton onClick={() => navigate("/upload-excel")}>
             <ListItemIcon>
               <img src="icon.svg" className="menu-logo" alt="icon"></img>
             </ListItemIcon>
