@@ -7,7 +7,7 @@ import { email, email_password, email_port, email_host } from "./Constants";
 export const transportMail = nodemailer.createTransport({
     host: email_host,
     port: email_port,
-    secure: false, // Use STARTTLS instead of SSL
+    secure: true, // Use STARTTLS instead of SSL
     requireTLS: true,
     auth: {
         user: email,
