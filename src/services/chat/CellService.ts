@@ -16,7 +16,7 @@ import { Role } from "../../Contexts/BillingPlatform/company/domain/Company";
 export async function getCellphones(idUser: number) {
   const cellphones = await Debtor.findAll({
     where: { id_user: idUser },
-    attributes: ["name", "id", "paid", "document"],
+    attributes: ["name", "id", "paid", "document", "channel"],
     include: [
       {
         model: Cellphone,

@@ -45,6 +45,11 @@ export const DebtorEntity = new EntitySchema<Debtor>({
       type: "timestamp",
       updateDate: true,
     },
+    channel: {
+      type: String,
+      nullable: false,
+      default: 'whatsapp',
+    },
   },
   relations: {
     telephones: {

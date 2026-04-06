@@ -77,7 +77,7 @@ export class ProcessWorkbook {
               from: fromNum,
               to: finalPhoneNum,   
               number: finalPhoneNum,
-              id_debtor: debtor.id!
+              id_debtor: debtor.id!,
             });
             await this.cellphoneRepository.save(cellphone);
           } catch (e) { console.log("❌ Error guardando celular", e); }
@@ -93,9 +93,9 @@ export class ProcessWorkbook {
           } catch (e) { console.error("Error guardando chat mongo", e); }
 
           let messageBody = sendDebtMessage(row, gptPromptsJson.prompt_greeting);
-          if (messageBody && messageBody.includes("${debtorName}")) {
-             messageBody = messageBody.replace(/\$\{debtorName\}/g, debtorName);
-          }
+          // if (messageBody && messageBody.includes("${debtorName}")) {
+          //    messageBody = messageBody.replace(/\$\{debtorName\}/g, debtorName);
+          // }
 
           const batchIndex = Math.floor(scheduledCount / concurrency);
           const delayInSeconds = batchIndex * SECONDS_BETWEEN_MESSAGES;

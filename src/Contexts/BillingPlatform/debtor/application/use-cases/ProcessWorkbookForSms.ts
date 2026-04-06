@@ -36,6 +36,10 @@ export class ProcessWorkbookForSms {
       const telephoneKeyNames = Object.keys(workbookJson[0]).filter((key: string) => {
         const lowerKey = key.toLowerCase();
         const telephoneKeywords = this.columnsConfig.telephone_alternatives || [this.columnsConfig.telephone];
+        
+        const blackList = ["tarjeta", "card", "id", "cedula", "documento", "invoice"];
+        if (blackList.some(excluded => lowerKey.includes(excluded))) return false;
+
         return telephoneKeywords.some((keyword: string) => 
           lowerKey.includes(keyword.toLowerCase())
         );

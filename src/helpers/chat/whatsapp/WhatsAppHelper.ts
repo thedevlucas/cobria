@@ -64,14 +64,14 @@ export async function sendFirstMessageToClient(
       message: `¡Buen día! ¿Le puedo ayudar con algo? Le hablo para verificar si ${clientName} se encuentra disponible.`,
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error al enviar mensaje:", error);
 
     await createChat({
       id_user: idUser,
       from_cellphone: Number(twilio_whatsapp_number),
       to_cellphone: Number(clientPhoneNumber),
-      message: "Error al enviar el mensaje",
-      status: false,
+      message: `¡Buen día! ¿Le puedo ayudar con algo? Le hablo para verificar si ${clientName} se encuentra disponible.`,
+      status: 'failed',
     });
   }
   return { message: "Mensaje enviado" };
@@ -99,14 +99,14 @@ export async function sendWhatsappMessage(
       message: message,
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error al enviar mensaje:", error);
 
     await createChat({
       id_user: idUser,
       from_cellphone: Number(from),
       to_cellphone: Number(to),
-      message: "Error al enviar el mensaje",
-      status: false,
+      message: message,
+      status: 'failed',
     });
   }
   return { message: "Mensaje enviado" };
@@ -190,7 +190,7 @@ export async function createCellphone4Csv(
         number: clientNumber,
         from: from, 
         to: to,   
-        id_debtor: debtorId 
+        id_debtor: debtorId,
     });
   }
 }

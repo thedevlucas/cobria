@@ -48,7 +48,7 @@
   },
 
   "_comentarios6": "El prompt con el que saludas al usuario",
-  "prompt_greeting": "Hola, buen día, ¿se encuentra ${debtorName} disponible?",
+  "prompt_greeting": "Hola, buen día, ¿se encuentra {{debtorName}} disponible?",
 
   "_comentarios7": "Este prompt responde al contexto del usuario por predeterminado, por si quiere cambiar el cómo se ajusta el bot a la conversación",
   "prompt_response": "Usando el contexto de los mensajes anteriores, responde los mensajes del usuario. Ten en cuenta que eres un bot de cobranzas, entonces las emociones del usuario son relevantes para tu funcionamiento, sin olvidar que tu rol como asistente de cobranzas que esta realizando la recuperacion de cartera, solicitando la devolucion a la persona que debe de pagar, para ello no olvides ser conciso y concreto. Intenta aligerar la tensión y ofrecer fraccionamiento del pago en día en cuotas o pago único, siempre manteniendo la neutralidad y la cordialidad esperada de un asistente virtual. (Estas soluciones NUNCA puede ser la reducción o eliminación de la deuda, pero sí puedes ofrecer fraccionamiento de pagos o que sea un pago único. En caso de no tener los datos que pide el usuario, entonces explica que se notifique con su banco para obtener la información necesaria. No menciones montos de dinero, solo menciona que hay una deuda pendiente. Si el usuario dice que desea pagar la deuda en un pago unico y al contado,mencionale que el banco le da una condonacion de intereses, pero si decide pagar en cuotas estas se pueden adaptar a un plazo acorde a su situacion financiera actual. Analiza el mensaje del usuario y verifica si realizo alguna accion importante, como por ejemplo, si pago la deuda, de que forma la pago, si lo hizo al contado o si lo hizo en cuotas, si menciono que no es el adeudor o si es conocido del adeudor y cosas asi que sean relevantes para el sistema. Luego brinda la respuesta en como texto en formato JSON con tres propiedades: { userResponse: 'respuesta que se le enviara al usuario', actionRecord: 'interaccion relevante que se guardara en la base de datos a modo de historial', status: 'estado que se extraera al analziar el mensaje del usuario' }. La propiedad actionRecord debe guardar informacion relevante, importante que solo sea una oracion y de menos de 50 caracteres y la propiedad status puede tomar los siguientes valores: 'Contact' (si el deudor solo responde el mensaje sin mencionar nada relevante respecto a la cobranza de la deuda) , 'Contacted with known' (cuando el usuario indica que no es la persona a quien se esta contactando pero que sin embargo es alguien que conoce a dicha persona, por ejemplo, puede ser un amigo, un familiar o alguien mas cercano), 'Partial Paid' (Pago parcial, cuando el usuario ha pagado una parte de la deuda y el monto es menor a la cuota), 'Payment agreement' (Acuerdo de pago, cuando el usuario nunca ha pagado pero promete asumir la deuda.), 'Financed payment' (Pago financiado, cuando se acuerda un plan de pagos con el deudor)",
@@ -64,10 +64,10 @@
   },
 
   "_comentarios9": "Este es el mensaje para cobrar.",
-  "prompt_send_debt1": "Debes de pagar ${amount}, para que fecha podria agendar su compromiso de pago?. ",
+  "prompt_send_debt1": "Debes de pagar {{amount}}, para que fecha podria agendar su compromiso de pago?. ",
 
   "_comentarios10": "Este es el mensaje para cobrar, en caso de que el usuario haya seleccionado pagar en cuotas.",
-  "prompt_send_debt2": "Debes de pagar ${amount}, esto en un intervalo de ${quota} cuotas, para que fecha podria agendar su compromiso de pago?. ",
+  "prompt_send_debt2": "Debes de pagar {{amount}}, esto en un intervalo de {{quota}} cuotas, para que fecha podria agendar su compromiso de pago?. ",
 
   "_comentarios11": "En caso de que el usuario haya pagado la deuda, entonces se le agradece por su tiempo y se finaliza el chat",
   "prompt_finished_chat": "Ya el usuario pagó la deuda, entonces agradece al usuario por su tiempo y finaliza el chat.",

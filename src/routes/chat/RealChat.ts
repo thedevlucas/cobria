@@ -38,14 +38,15 @@ router.get('/chats/:debtorId', verifyToken, async (req, res) => {
 // Send message to debtor
 router.post('/send', verifyToken, async (req, res) => {
   try {
-    const { debtorId, message, messageType = 'text' } = req.body;
+    const { debtorId, message, messageType = 'text', channel = 'whatsapp' } = req.body;
     const { idUser } = req.body;
     
     const result = await RealChatService.sendMessage({
       debtorId: parseInt(debtorId),
       message,
       messageType,
-      userId: idUser
+      userId: idUser,
+      channel: channel as 'whatsapp' | 'sms'
     });
     
     res.json({

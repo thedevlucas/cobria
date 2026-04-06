@@ -9,7 +9,8 @@ export class Chat extends AggregateRoot {
   readonly createdAt?: Date;
   readonly image?: Buffer;
   readonly image_type?: string;
-  readonly status?: boolean;
+  readonly status?: boolean | 'failed';
+  readonly channel?: string;
 
   constructor(
     id_user: number,
@@ -19,7 +20,8 @@ export class Chat extends AggregateRoot {
     createdAt: Date,
     image: Buffer,
     image_type: string,
-    status: boolean
+    status: boolean | 'failed',
+    channel?: string
   ) {
     super();
     this.id_user = id_user;
@@ -30,6 +32,7 @@ export class Chat extends AggregateRoot {
     this.image = image;
     this.image_type = image_type;
     this.status = status;
+    this.channel = channel;
   }
 
   static create(params: {
@@ -40,7 +43,8 @@ export class Chat extends AggregateRoot {
     createdAt?: Date;
     image?: Buffer;
     imageType?: string;
-    status?: boolean;
+    status?: boolean | 'failed';
+    channel?: string;
   }) {
     return new Chat(
       params.idUser,
@@ -50,7 +54,8 @@ export class Chat extends AggregateRoot {
       new Date(),
       params.image || Buffer.from(""),
       params.imageType || "",
-      params.status || true
+      params.status || true,
+      params.channel
     );
   }
 
@@ -61,7 +66,8 @@ export class Chat extends AggregateRoot {
     message: string;
     image?: Buffer;
     image_type?: string;
-    status?: boolean;
+    status?: boolean | 'failed';
+    channel?: string
   }) {
     return new Chat(
       json.id_user,
@@ -71,7 +77,8 @@ export class Chat extends AggregateRoot {
       new Date(),
       json.image || Buffer.from(""),
       json.image_type || "",
-      json.status || true
+      json.status || true,
+      json.channel
     );
   }
 
@@ -90,6 +97,7 @@ export class Chat extends AggregateRoot {
       image: this.image,
       image_type: this.image_type,
       status: this.status,
+      channel: this.channel,
     };
   }
 }

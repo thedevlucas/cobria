@@ -47,7 +47,7 @@ router.post("/chats/:debtorId/send", verifyToken, async (req, res) => {
     const userId = Number(req.params.idToken);
     const debtorId = parseInt(req.params.debtorId);
     
-    const { message, type = 'text' } = req.body; 
+    const { message, type = 'text', channel = 'whatsapp' } = req.body; 
 
     console.log(`📤 Intento de envío: User ${userId} -> Deudor ID ${debtorId}`);
 
@@ -69,7 +69,8 @@ router.post("/chats/:debtorId/send", verifyToken, async (req, res) => {
         debtorId,
         userId,
         message,
-        messageType: type
+        messageType: type,
+        channel: channel as 'whatsapp' | 'sms'
     });
     
     res.json({

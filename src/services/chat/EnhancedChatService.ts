@@ -179,7 +179,7 @@ export class EnhancedChatService {
         debtor_name: debtor?.name || 'Unknown'
       };
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error al enviar mensaje:", error);
       throw new httpError('Error al enviar el mensaje', 500);
     }
   }

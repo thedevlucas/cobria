@@ -6,15 +6,17 @@ export class Cellphone {
   to: number;
   number: number;
   id_debtor: number;
+  channel: string;
   readonly createdAt: Date;
   updatedAt: Date;
   debtor?: Debtor;
 
-  constructor(from: number, to: number, number: number, id_debtor: number) {
+  constructor(from: number, to: number, number: number, id_debtor: number, channel: string = 'whatsapp') {
     this.from = from;
     this.to = to;
     this.number = number;
     this.id_debtor = id_debtor;
+    this.channel = channel;
     this.createdAt = new Date();
     this.updatedAt = new Date();
   }
@@ -24,8 +26,9 @@ export class Cellphone {
     to: number;
     number: number;
     id_debtor: number;
+    channel?: string;
   }): Cellphone {
-    return new Cellphone(params.from, params.to, params.number, params.id_debtor);
+    return new Cellphone(params.from, params.to, params.number, params.id_debtor, params.channel || 'whatsapp');
   }
 
   static fromPrimitives(plainData: {
@@ -33,12 +36,14 @@ export class Cellphone {
     to: number;
     number: number;
     id_debtor: number;
+    channel?: string;
   }): Cellphone {
     return new Cellphone(
       plainData.from,
       plainData.to,
-      plainData.number, 
-      plainData.id_debtor
+      plainData.number,
+      plainData.id_debtor,
+      plainData.channel || 'whatsapp'
     );
   }
 
@@ -47,8 +52,9 @@ export class Cellphone {
       id: this.id,
       from: this.from,
       to: this.to,
-      number: this.number, 
+      number: this.number,
       id_debtor: this.id_debtor,
+      channel: this.channel,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

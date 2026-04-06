@@ -46,6 +46,7 @@ export class MongoChatRepository
         image: document.image,
         image_type: document.image_type,
         status: document.status,
+        channel: document.channel,
       });
 
       chat.setId(document._id.toString());

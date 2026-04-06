@@ -14,6 +14,7 @@ export const environment = process.env.NODE_ENV;
 export const account_sid = process.env.ACCOUNT_SID;
 export const auth_token_twilio = process.env.AUTH_TOKEN_TWILLIO;
 export const twilio_whatsapp_number = process.env.TWILIO_WHATSAPP_NUMBER;
+export const twilio_sms_number = process.env.TWILIO_SMS_NUMBER;
 // Database credentials
 export const database_host = process.env.DATABASE_HOST;
 export const database_name = process.env.DATABASE_NAME;

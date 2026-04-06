@@ -1,4 +1,5 @@
 import { Chat as ChatModel } from "../../../../../models/Chat";
+import { Company } from "../../../../../models/Company";
 import { DebtorRepository } from "../../../debtor/domain/DebtorRepository";
 import { ChatRepository } from "../../domain/ChatRepository";
 import { Communication } from "../../domain/Communication";
@@ -8,6 +9,7 @@ import { Chat } from "../../domain/Chat";
 import { SendWhatsappMessage } from "../services/SendWhatsappMessage";
 import { AIService, CollectionContext } from "../../../../../services/ai/AIService";
 import { createDebtImage } from "../../../../../services/chat/DebtorImageService"; // Importar el servicio existente
+import { ocrConfig } from "../../../../../config/Constants";
 
 export class ProcessIncomingMessage {
   private readonly sendWhatsappMessageService: SendWhatsappMessage;
@@ -32,8 +34,13 @@ export class ProcessIncomingMessage {
     const fromNumber = params.serviceNumber.replace("whatsapp:+", ""); 
     const toNumber = params.debtorNumber.replace("whatsapp:+", "");
 
+    const isWhatsapp = params.serviceNumber.includes("whatsapp");
+
     const debtor = await this.debtorRepository.findByCellphone(Number(fromNumber), Number(toNumber));
-    if (!debtor) return;
+    if (!debtor) {
+        console.log(`❌ Deudor no encontrado para el número: ${toNumber}`);
+        return;
+    }
 
     // --- 1. DETECTAR SI ES IMAGEN O TEXTO Y GUARDAR ---
     let internalContext = "";
@@ -56,7 +63,8 @@ export class ProcessIncomingMessage {
           idUser: debtor.id_user,
           fromCellphone: Number(toNumber),
           toCellphone: Number(fromNumber),
-          message: imageUrl, 
+          message: imageUrl,
+          channel: isWhatsapp ? 'whatsapp' : 'sms',
        });
        await this.chatRepository.save(imageChat);
 
@@ -68,6 +76,7 @@ export class ProcessIncomingMessage {
           fromCellphone: Number(toNumber),
           toCellphone: Number(fromNumber),
           message: params.message,
+          channel: isWhatsapp ? 'whatsapp' : 'sms',
        });
        await this.chatRepository.save(incomingChat);
     }
@@ -130,28 +139,66 @@ export class ProcessIncomingMessage {
     }
 
     // --- 4. PREPARAR CONTEXTO IA ---
+    // Extract debt amount from the initial JSON context message saved when debtor was first contacted
+    let debtAmount = 0;
+    const contextMsg = rawChats.find((m: any) => m.message && m.message.startsWith('{'));
+    if (contextMsg) {
+      try {
+        const parsed = JSON.parse(contextMsg.message.substring(0, contextMsg.message.indexOf('}') + 1));
+        const moraKey = ocrConfig["mora"];
+        if (parsed[moraKey] !== undefined) debtAmount = Number(parsed[moraKey]);
+      } catch { /* ignore parse errors */ }
+    }
+
+    // Fetch company name so AI can tell the debtor who they owe money to
+    let companyName: string | undefined;
+    try {
+      const company = await (Company as any).findOne({ where: { id: debtor.id_user } });
+      if (company) companyName = company.companyName || company.name;
+    } catch { /* non-blocking */ }
+
     const aiContext: CollectionContext = {
       debtor_name: debtor.name,
       debtor_document: String(debtor.document),
       payment_status: debtor.status || "Pending",
-      debt_amount: 0, // Ajustar si tienes el monto real en debtor
+      debt_amount: debtAmount,
       days_overdue: 30,
+      company_name: companyName,
       collection_channel: 'whatsapp',
       previous_interactions: formattedHistory,
       admin_feedback: adminFeedbackInstructions,
-      debtor_profile: { payment_history: "Standard", communication_preference: "Whatsapp" },
+      debtor_profile: { payment_history: "Standard", communication_preference: isWhatsapp ? "Whatsapp" : "SMS" },
       collection_stage: "Cobranza"
     };
 
     // --- 5. GENERAR Y ENVIAR RESPUESTA ---
     const aiResponse = await this.aiService.generateCollectionMessage(aiContext);
 
-    await this.sendWhatsappMessageService.run({
-      fromNumber,
-      toNumber,
-      message: aiResponse.suggested_message,
-      idUser: debtor.id_user,
-    });
+    if (isWhatsapp) {
+        await this.sendWhatsappMessageService.run({
+          fromNumber,
+          toNumber,
+          message: aiResponse.suggested_message,
+          idUser: debtor.id_user,
+        });
+    } else {
+        // Respuesta automática por SMS usando el servicio de comunicación
+        await this.communicationService.sendSmsMessage({
+            idUser: debtor.id_user,
+            from: fromNumber,
+            to: toNumber,
+            message: aiResponse.suggested_message
+        });
+        // Guardar la respuesta de la IA en el historial de chat
+        const smsResponseChat = Chat.create({
+            idUser: debtor.id_user,
+            fromCellphone: Number(fromNumber),
+            toCellphone: Number(toNumber),
+            message: aiResponse.suggested_message,
+            channel: 'sms',
+        });
+        await this.chatRepository.save(smsResponseChat);
+    }
 
     return { message: "Procesado correctamente" };
   }

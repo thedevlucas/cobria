@@ -49,6 +49,18 @@ export const PendingMessage = database.define(
       allowNull: true,
       defaultValue: null,
     },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      allowNull: false,
+      field: 'created_at'
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      allowNull: false,
+      field: 'updated_at'
+    },
   },
   {
     sequelize: database,

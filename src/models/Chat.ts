@@ -34,6 +34,11 @@ const chatSchema = new mongoose.Schema({
     type: String,
     default: true,
   },
+  channel: {
+    type: String,
+    enum: ['whatsapp', 'sms'],
+    default: 'whatsapp',
+  },
 });
 
 export const Chat = mongoose.model("Chat", chatSchema);0

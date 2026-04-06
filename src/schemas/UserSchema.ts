@@ -33,13 +33,13 @@ export interface modifyUserInterface {
 export const roleSchema = ["superadmin", "admin", "user"];
 export const emailSchema = z
   .object({
-    email: z.string().email(),
+    email: z.string().email("El correo electrónico no es válido"),
   })
   .strict();
 
 const passwordSchema = z
   .object({
-    password: z.string().min(6),
+    password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   })
   .strict();
 
@@ -51,9 +51,13 @@ const loginSchema = z
 
 const registerSchema = z
   .object({
-    name: z.string().min(1),
-    isCollectionCompany: z.boolean(),
-    companyName: z.string().min(1),
+    name: z.string().min(1, "El nombre es obligatorio"),
+    isCollectionCompany: z.boolean({
+        invalid_type_error: "Debe indicar si es una empresa de cobranza"
+    }),
+    companyName: z.string().min(1, "El nombre de la empresa es obligatorio"),
+    cellphone: z.number().min(7, "El celular debe ser válido").optional(),
+    telephone: z.number().min(7, "El teléfono debe ser válido").optional(),
   })
   .merge(emailSchema)
   .merge(passwordSchema)
@@ -61,30 +65,38 @@ const registerSchema = z
 
 const createUserSchema = z
   .object({
-    role: z.enum(roleSchema as [string, ...string[]]),
-    active: z.boolean(),
-    cellphone: z.number().min(2).nullable().optional(),
-    telephone: z.number().min(2).nullable().optional(),
+    role: z.enum(roleSchema as [string, ...string[]], {
+        errorMap: () => ({ message: "El rol seleccionado no es válido" })
+    }),
+    active: z.boolean({
+        invalid_type_error: "El estado debe ser un valor booleano"
+    }),
+    cellphone: z.number().min(2, "El número de celular debe ser válido").nullable().optional(),
+    telephone: z.number().min(2, "El número de teléfono debe ser válido").nullable().optional(),
   })
   .merge(registerSchema)
   .strict();
 
 const modifyUserSchema = z
   .object({
-    name: z.string().min(1),
-    password: z.string().min(6).nullable().optional(),
-    role: z.enum(roleSchema as [string, ...string[]]),
-    active: z.boolean(),
-    cellphone: z.number().min(2).nullable().optional(),
-    telephone: z.number().min(2).nullable().optional(),
+    name: z.string().min(1, "El nombre es obligatorio"),
+    password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").nullable().optional(),
+    role: z.enum(roleSchema as [string, ...string[]], {
+        errorMap: () => ({ message: "El rol seleccionado no es válido" })
+    }),
+    active: z.boolean({
+        invalid_type_error: "El estado debe ser un valor booleano"
+    }),
+    cellphone: z.number().min(2, "El número de celular debe ser válido").nullable().optional(),
+    telephone: z.number().min(2, "El número de teléfono debe ser válido").nullable().optional(),
   })
   .merge(emailSchema)
   .strict();
 
 const changePasswordSchema = z
   .object({
-    oldPassword: z.string().min(6),
-    newPassword: z.string().min(6),
+    oldPassword: z.string().min(6, "La contraseña actual debe tener al menos 6 caracteres"),
+    newPassword: z.string().min(6, "La nueva contraseña debe tener al menos 6 caracteres"),
   })
   .strict();
 

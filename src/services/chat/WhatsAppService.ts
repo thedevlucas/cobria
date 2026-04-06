@@ -54,8 +54,7 @@ async function sendStartingMessageFromCsv(
     const stringTelephoneVerify = telephone.toString();
     if (
       telephone &&
-      (stringTelephoneVerify.length == cellphoneInfo.cellphone_length ||
-        stringTelephoneVerify.length == cellphoneInfo.telephone_length)
+      (stringTelephoneVerify.length <= cellphoneInfo.cellphone_length)
     ) {
       // Create the debtor or search it
       const debtor = await createDebtor4Csv(

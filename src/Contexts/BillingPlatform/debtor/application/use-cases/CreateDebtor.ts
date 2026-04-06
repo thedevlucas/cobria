@@ -16,6 +16,7 @@ export class CreateDebtor {
     document: number;
     idUser: number;
     debtDate?: Date;
+    channel?: string;
   }): Promise<Debtor> {
     console.log(`🔍 CreateDebtor: Processing debtor - Name: ${params.name}, Document: ${params.document}, User: ${params.idUser}`);
     
@@ -40,6 +41,7 @@ export class CreateDebtor {
       document: params.document,
       id_user: params.idUser,
       status: debtorStatus,
+      channel: params.channel || 'whatsapp',
     });
 
     console.log(`💾 CreateDebtor: Saving debtor to database...`);

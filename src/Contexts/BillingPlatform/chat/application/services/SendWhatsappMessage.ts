@@ -37,6 +37,7 @@ export class SendWhatsappMessage {
         fromCellphone: Number(twilio_whatsapp_number),
         toCellphone: Number(params.toNumber),
         message: params.message,
+        channel: "whatsapp",
       });
 
       await Promise.all([
@@ -44,14 +45,14 @@ export class SendWhatsappMessage {
         this.chatRepository.save(chat),
       ]);
     } catch (error) {
-      console.error(error);
+      console.error("Error al enviar mensaje:", error);
 
       const chat = Chat.create({
         idUser: params.idUser,
         fromCellphone: Number(twilio_whatsapp_number),
         toCellphone: Number(params.toNumber),
-        message: "Error al enviar el mensaje",
-        status: false,
+        message: params.message,
+        status: 'failed',
       });
 
       await this.chatRepository.save(chat);

@@ -11,7 +11,7 @@ export interface ChatInterface {
   message: string;
   image?: Buffer;
   image_type?: string;
-  status?: boolean;
+  status?: boolean | 'failed';
 }
 
 // Schema

@@ -18,6 +18,9 @@ export async function login(email:string,password:string){
     if(!compare){
         throw new httpError("Credenciales invalidas",400);
     }
+    if (!searchUserEmail.active) {
+        throw new httpError("Tu cuenta está inactiva. Contacta al administrador.", 403);
+    }
     const id = searchUserEmail.id;
     const token = jwt.sign({ id }, jwt_key, { expiresIn: jwt_expires_in });
     return token;

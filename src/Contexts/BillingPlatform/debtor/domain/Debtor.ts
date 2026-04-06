@@ -27,6 +27,7 @@ export class Debtor extends AggregateRoot {
   paid: PaymentStatus;
   status: Status;
   events: string;
+  channel: string;
   readonly createdAt: Date;
   updatedAt: Date;
   telephones!: Telephone[];
@@ -38,7 +39,8 @@ export class Debtor extends AggregateRoot {
     document: number,
     paid: PaymentStatus,
     status: Status,
-    email?: string
+    email?: string,
+    channel: string = 'whatsapp'
   ) {
     super();
     this.id_user = id_user;
@@ -47,6 +49,7 @@ export class Debtor extends AggregateRoot {
     this.email = email;
     this.paid = paid;
     this.status = status;
+    this.channel = channel;
     this.events = "";
     this.createdAt = new Date();
     this.updatedAt = new Date();
@@ -57,13 +60,16 @@ export class Debtor extends AggregateRoot {
     name: string;
     status: Status;
     document: number;
+    channel?: string;
   }): Debtor {
     return new Debtor(
       params.id_user,
       params.name,
       params.document,
       PaymentStatus.NO_CONTACT,
-      params.status
+      params.status,
+      undefined,
+      params.channel || 'whatsapp'
     );
   }
 
@@ -117,6 +123,7 @@ export class Debtor extends AggregateRoot {
       email: this.email,
       paid: this.paid,
       status: this.status,
+      channel: this.channel,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

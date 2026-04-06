@@ -49,12 +49,13 @@ export async function sendCall(
       message: message,
     });
   } catch (error) {
+    console.error("Error al enviar mensaje:", error);
     await createCallChat({
       id_user: idUser,
       from_cellphone: Number(from),
       to_cellphone: Number(to),
-      message: "Error al enviar el mensaje",
-      status: false,
+      message: message,
+      status: 'failed',
     });
   }
   return { message: "Mensaje enviado" };

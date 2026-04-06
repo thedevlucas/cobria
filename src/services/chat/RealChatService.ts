@@ -8,6 +8,9 @@ import { QueryTypes } from 'sequelize';
 import { User } from '../../models/User';
 
 import { sendWhatsappMessage } from "./WhatsAppService";
+import { TwillioCommunication } from '../../Contexts/BillingPlatform/chat/infrastructure/TwillioCommunication';
+
+const communication = new TwillioCommunication();
 
 import { AIService, defaultAIConfig } from '../ai/AIService';
 
@@ -43,6 +46,7 @@ export interface Conversation {
   collection_stage: string;
   payment_probability: number;
   last_interaction: Date;
+  channel: 'whatsapp' | 'sms';
 }
 
 export interface ChatStatistics {
@@ -165,7 +169,7 @@ export class RealChatService {
             attributes: ['number', 'id'],
           },
         ],
-        attributes: ['id', 'name', 'document', 'paid', 'createdAt'],
+        attributes: ['id', 'name', 'document', 'paid', 'createdAt', 'channel'],
       });
 
       const conversations: Conversation[] = [];
@@ -208,6 +212,7 @@ export class RealChatService {
               collection_stage: collectionStage,
               payment_probability: paymentProbability,
               last_interaction: latestMessage?.createdAt || debtor.createdAt,
+              channel: (latestMessage?.channel || (debtor as any).channel || 'whatsapp') as 'whatsapp' | 'sms',
             });
           }
         }
@@ -286,6 +291,7 @@ static async getChatHistory(debtorIdOrPhone: number, userId: number): Promise<Ch
         timestamp: msg.createdAt,
         cost: msg.cost || 0,
         is_from_debtor: msg.from_cellphone === phoneNumber,
+        sendError: msg.status === 'failed',
         media_url: msg.media_url,
         media_type: msg.media_type,
         ai_feedback: msg.ai_feedback,
@@ -302,9 +308,10 @@ static async getChatHistory(debtorIdOrPhone: number, userId: number): Promise<Ch
     message: string;
     messageType: string;
     userId: number;
+    channel: 'whatsapp' | 'sms';
   }): Promise<ChatMessage> {
     try {
-      const { debtorId, message, messageType, userId } = params;
+      const { debtorId, message, messageType, userId, channel } = params;
 
       const debtor = await this.findDebtorSmart(debtorId, userId);
       if (!debtor) throw new Error('Debtor not found');
@@ -318,6 +325,7 @@ static async getChatHistory(debtorIdOrPhone: number, userId: number): Promise<Ch
         throw new Error("TWILIO_WHATSAPP_NUMBER no está configurado en el archivo .env");
       }
       const myTwilioNumber = Number(process.env.TWILIO_WHATSAPP_NUMBER)
+      const myTwilioSmsNumber = Number(process.env.TWILIO_SMS_NUMBER) 
 
       const calculatedCost = this.calculateMessageCost(messageType) || 0.01;
       const companyId = await this.resolveCompanyId(userId);
@@ -331,6 +339,7 @@ static async getChatHistory(debtorIdOrPhone: number, userId: number): Promise<Ch
         status: 'sent',
         cost: calculatedCost,
         is_from_debtor: false,
+        channel: channel,
         collection_stage: this.determineCollectionStage(debtor.paid, null),
       });
 
@@ -349,15 +358,26 @@ static async getChatHistory(debtorIdOrPhone: number, userId: number): Promise<Ch
       }
 
       try {
-          await sendWhatsappMessage(
-              "+" + myTwilioNumber.toString(), 
-              "+" + targetPhone.toString(), 
-              message, 
-              userId
-          );
-          console.log(`[RealChatService] Mensaje enviado a Twilio: ${targetPhone}`);
+          if (channel === 'whatsapp') {
+            await communication.sendWhatsappMessage({
+              idUser: userId,
+              from: "+" + myTwilioNumber.toString(),
+              to: "+" + targetPhone.toString(),
+              message: message
+            });
+          } else {
+            chatMessage.from_cellphone = myTwilioSmsNumber;
+            await communication.sendSmsMessage({
+              idUser: userId,
+              from: "+" + myTwilioSmsNumber.toString(),
+              to: "+" + targetPhone.toString(),
+              message: message
+            });
+          }
+          
+          console.log(`[RealChatService] Mensaje enviado a Twilio: ${targetPhone}, Channel: ${channel}`);
       } catch (twilioError) {
-          console.error('[RealChatService] Error enviando a Twilio:', twilioError);
+          console.error(`[RealChatService] Error enviando a Twilio: ${targetPhone}, Channel: ${channel}, Error:`, twilioError);
           // Opcional: Actualizar el estado del chatMessage a 'failed'
           // chatMessage.status = 'failed';
           // await chatMessage.save();

@@ -50,6 +50,11 @@ export const Debtor = database.define(
       values: paidSchema,
       defaultValue: "No contact",
     },
+    channel: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'whatsapp',
+    },
   },
   {
     indexes: [
