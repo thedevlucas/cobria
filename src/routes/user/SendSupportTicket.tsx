@@ -8,6 +8,7 @@ import { Form } from "react-router-dom";
 export default function SendSupportTicket() {
   const [subject, setSubject] = useState<string>("");
   const [message, setMessage] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -20,10 +21,13 @@ export default function SendSupportTicket() {
       });
     }
 
+    setLoading(true);
+
     await sendSupportTicket(subject, message);
 
     setSubject("");
     setMessage("");
+    setLoading(false);
   };
 
   return (
@@ -56,9 +60,10 @@ export default function SendSupportTicket() {
             type="submit"
             variant="contained"
             color="primary"
+            disabled={loading}
             sx={{ width: "100%" }}
           >
-            Enviar
+            {loading ? "Enviando..." : "Enviar"}
           </Button>
         </Form>
       </Container>

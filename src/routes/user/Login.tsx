@@ -2,8 +2,9 @@
 import "/src/static/css/user/Login.css"
 // Dependencies
 import {Button} from "@mui/material"
-import {useState} from "react"
+import {useState, useEffect} from "react"
 import {Link, useNavigate} from "react-router-dom"
+import Cookies from "js-cookie"
 // Components
 import {InputTextPassword} from "../../components/user/InputTextPassword"
 import { EmailTextField } from "../../components/user/EmailTextField"
@@ -21,6 +22,13 @@ export default function Login(){
 
     const isEmailValid = EMAIL_REGEX.test(email);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = Cookies.get("token");
+        if (token) {
+            navigate("/upload-excel");
+        }
+    }, [navigate]);
     
     return (
         <div className="login-all">
@@ -51,7 +59,7 @@ export default function Login(){
                         {loading ? "Cargando..." : "Iniciar sesión"}
                     </Button>
                     <p id="href-account">¿No tienes una cuenta? <Link to="/register">Registrate</Link></p>
-                    <p id="href-account">¿Olvidaste tu contraseña?<Link to="/password-recovery">Reinicia contraseña</Link></p>
+                    <p id="href-account">¿Olvidaste tu contraseña? <Link to="/password-recovery">Reinicia contraseña</Link></p>
                 </div>
             </div>
         </div>

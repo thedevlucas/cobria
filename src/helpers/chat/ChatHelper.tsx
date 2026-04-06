@@ -90,18 +90,21 @@ export async function deleteCellphone(
   });
 }
 
-export async function getChats(cellphone: number, navigate: NavigateFunction) {
+export async function getChats(cellphone: number, navigate: NavigateFunction, type: 'whatsapp' | 'sms' = 'whatsapp') {
   try {
-    const chats = await axios.get(`${API_URL}/api/whatsapp/chat/${cellphone}`, {
+    // Definimos el endpoint dinámicamente
+    const channel = type === 'whatsapp' ? 'whatsapp' : 'sms';
+    
+    const chats = await axios.get(`${API_URL}/api/${channel}/chat/${cellphone}`, {
       headers: {
         Authorization: `Bearer ${Cookies.get("token")}`,
       },
     });
 
-    // ✅ FILTRO: ocultar mensajes internos de IA para que no se vean en el chat
+    // Filtro para ocultar mensajes técnicos de la IA
     const filtered = (chats.data || []).filter((chat: Record<string, any>) => {
       const msg = (chat.message ?? "").toString();
-      return !msg.startsWith("[AI_CONTEXT_INTERNAL]");
+      return !msg.startsWith("[AI_CONTEXT_INTERNAL]") && !msg.includes("[ADMIN_FEEDBACK]");
     });
 
     return filtered.map((chat: Record<string, any>) => {
@@ -123,10 +126,13 @@ export async function getChats(cellphone: number, navigate: NavigateFunction) {
 export async function createMessage(
   data: Record<string, any>,
   cellphone: number,
-  setterMessage: React.Dispatch<React.SetStateAction<string>>
+  setterMessage: React.Dispatch<React.SetStateAction<string>>,
+  type: 'whatsapp' | 'sms' = 'whatsapp'
 ) {
   try {
-    await axios.post(`${API_URL}/api/whatsapp/chat/${cellphone}`, data, {
+    const channel = type === 'whatsapp' ? 'whatsapp' : 'sms';
+    console.log("Enviando mensaje a:", cellphone, "con datos:", data);
+    await axios.post(`${API_URL}/api/${channel}/chat/${cellphone}`, data, {
       headers: {
         Authorization: `Bearer ${Cookies.get("token")}`,
       },

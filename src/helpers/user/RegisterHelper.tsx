@@ -31,7 +31,7 @@ export async function register(data: Record<string, any>) {
     Swal.fire({
       icon: "error",
       title: "Error",
-      text: error.response?.data?.message || "Error al registrar usuario",
+      html: error.response?.data?.message || "Error al registrar usuario",
     });
   }
 }
@@ -61,7 +61,7 @@ export async function login(
     Swal.fire({
       icon: "error",
       title: "Error",
-      text: error.response?.data?.message || "Error al iniciar sesión",
+      html: error.response?.data?.message || "Error al iniciar sesión",
     });
   }
 }

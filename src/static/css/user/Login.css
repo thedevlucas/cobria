@@ -1,4 +1,10 @@
 /* front/static/css/user/Login.css */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
 
 .login-all {
   /* Eliminamos position absolute para permitir el scroll si el formulario es largo */

@@ -60,7 +60,7 @@ export async function deleteTelephone(
       Swal.fire({
         title: "Error",
         icon: "error",
-        text: error.response.data.message,
+        html: error.response.data.message,
       });
     }
   });

@@ -55,6 +55,7 @@ export async function sendSupportTicket(subject: string, message: string) {
       text: "Tu ticket ha sido enviado correctamente",
       icon: "success",
     });
+    
   } catch (error) {
     console.error(error);
 

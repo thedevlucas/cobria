@@ -48,7 +48,7 @@ export async function uploadFile(
     Swal.fire({
       icon: "error",
       title: "Oops...",
-      text: error.response.data.message,
+      html: error.response.data.message,
     });
   }
 }

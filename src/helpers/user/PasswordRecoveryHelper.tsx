@@ -16,7 +16,7 @@ export async function sendRecoveryLink(data:Record<string,any>){
         Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: error.response.data.message,
+            html: error.response.data.message,
         })
     }
 }
@@ -39,7 +39,7 @@ export async function recoverPassword(data:Record<string,any>){
         Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: error.response.data.message,
+            html: error.response.data.message,
         })
     }
 }

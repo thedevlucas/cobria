@@ -7,7 +7,7 @@ import { API_URL } from "../../constants/Constants";
 
 export async function getCost() {
   try {
-    const response = await axios.get(`${API_URL}/admin/costs`, {
+    const response = await axios.get(`${API_URL}/api/admin/costs`, {
       headers: {
         Authorization: `Bearer ${Cookies.get("token")}`,
       },

@@ -147,14 +147,14 @@ const UserMenu = ({ navigate }: Props) => {
               <ListItemText primary="Gestión de Cobranzas" />
             </ListItemButton>
           </ListItem>
-          <ListItem key="Seguimiento de Costos" disablePadding>
+          {/* <ListItem key="Seguimiento de Costos" disablePadding>
             <ListItemButton onClick={() => navigate("/cost-tracking")}>
               <ListItemIcon>
                 <AttachMoneyIcon />
               </ListItemIcon>
               <ListItemText primary="Seguimiento de Costos" />
             </ListItemButton>
-          </ListItem>
+          </ListItem> */}
       <ListItem key="Reporte" disablePadding>
         <ListItemButton onClick={() => navigate("/report")}>
           <ListItemIcon>

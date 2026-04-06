@@ -117,7 +117,7 @@ export async function deleteSelf(navigate: NavigateFunction) {
       Swal.fire({
         title: "Error al borrar la cuenta",
         icon: "error",
-        text: error.response.data.message,
+        html: error.response.data.message,
       });
     }
   });
@@ -157,7 +157,7 @@ export async function modifyPassword(
       Swal.fire({
         title: "Error al cambiar la contraseña",
         icon: "error",
-        text: error.response.data.message,
+        html: error.response.data.message,
       });
     }
   });

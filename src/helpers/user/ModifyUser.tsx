@@ -27,11 +27,6 @@ export const columnsUser: GridColDef[] = [
     flex: 1,
   },
   {
-    field: "password",
-    headerName: "Contraseña",
-    flex: 1,
-  },
-  {
     field: "active",
     headerName: "Estado",
     flex: 1,
@@ -54,7 +49,7 @@ export const columnsUser: GridColDef[] = [
 ];
 
 async function getUsers() {
-  const users = await axios.get(`${API_URL}/admin`, {
+  const users = await axios.get(`${API_URL}/api/admin`, {
     headers: {
       Authorization: `Bearer ${Cookies.get("token")}`,
     },
@@ -90,7 +85,7 @@ export const getAssociatedAgents = async () => {
 
 export async function createUser(data: Record<string, any>) {
   try {
-    await axios.post(`${API_URL}/admin`, data, {
+    await axios.post(`${API_URL}/api/admin`, data, {
       headers: {
         Authorization: `Bearer ${Cookies.get("token")}`,
       },
@@ -99,19 +94,21 @@ export async function createUser(data: Record<string, any>) {
       title: "Usuario creado",
       icon: "success",
       text: "El usuario ha sido creado exitosamente",
+    }).then(() => {
+      window.location.reload();
     });
   } catch (error: any) {
     Swal.fire({
       title: "Error",
       icon: "error",
-      text: error.response.data.message,
+      html: error.response.data.message,
     });
   }
 }
 
 export async function deleteUser(id: number) {
   try {
-    await axios.delete(`${API_URL}/admin/${id}`, {
+    await axios.delete(`${API_URL}/api/admin/${id}`, {
       headers: {
         Authorization: `Bearer ${Cookies.get("token")}`,
       },
@@ -120,12 +117,14 @@ export async function deleteUser(id: number) {
       title: "Usuario eliminado",
       icon: "success",
       text: "El usuario ha sido eliminado exitosamente",
+    }).then(() => {
+      window.location.reload();
     });
   } catch (error: any) {
     Swal.fire({
       title: "Error",
       icon: "error",
-      text: error.response.data.message,
+      html: error.response.data.message,
     });
   }
 }
@@ -133,7 +132,7 @@ export async function deleteUser(id: number) {
 export async function changeStateUser(id: number) {
   try {
     await axios.patch(
-      `${API_URL}/admin/${id}/`,
+      `${API_URL}/api/admin/${id}/`,
       {},
       {
         headers: {
@@ -145,12 +144,14 @@ export async function changeStateUser(id: number) {
       title: "Estado cambiado",
       icon: "success",
       text: "El estado del usuario ha sido cambiado exitosamente",
+    }).then(() => {
+      window.location.reload();
     });
   } catch (error: any) {
     Swal.fire({
       title: "Error",
       icon: "error",
-      text: error.response.data.message,
+      html: error.response.data.message,
     });
   }
 }
@@ -159,7 +160,7 @@ export async function modifyUser(data: Record<string, any>) {
   try {
     const dataBody = { ...data };
     delete dataBody.id;
-    const response = await axios.put(`${API_URL}/admin/${data.id}`, dataBody, {
+    const response = await axios.put(`${API_URL}/api/admin/${data.id}`, dataBody, {
       headers: {
         Authorization: `Bearer ${Cookies.get("token")}`,
       },
@@ -168,12 +169,14 @@ export async function modifyUser(data: Record<string, any>) {
       title: "Usuario modificado",
       icon: "success",
       text: response.data.message,
+    }).then(() => {
+      window.location.reload();
     });
   } catch (error: any) {
     Swal.fire({
       title: "Error",
       icon: "error",
-      text: error.response.data.message,
+      html: error.response.data.message,
     });
   }
 }

@@ -66,6 +66,7 @@ interface ChatMessage {
   is_from_debtor: boolean;
   media_url?: string;
   media_type?: string;
+  sendError?: boolean;
 }
 
 interface Conversation {
@@ -75,6 +76,7 @@ interface Conversation {
   latest_timestamp: Date;
   message_count: number;
   unread_count: number;
+  channel: 'whatsapp' | 'sms';
 }
 
 interface ChatStatistics {
@@ -92,6 +94,7 @@ interface Debtor {
   document: string;
   email: string;
   paid: string;
+  channel?: 'whatsapp' | 'sms';
   cellphones?: Array<{
     id: number;
     from: number;
@@ -118,6 +121,7 @@ const Chat: React.FC = () => {
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   //AI Feedback
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
@@ -141,13 +145,27 @@ const Chat: React.FC = () => {
   useEffect(() => {
     loadStatistics();
     loadDebtorsWithCellphones();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load conversations when selected conversation changes
+  // Load conversations when selected conversation changes + start polling
   useEffect(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
     if (selectedConversation) {
       loadChatHistory(selectedConversation.phone_number);
+      pollingRef.current = setInterval(() => {
+        loadChatHistorySilent(selectedConversation.phone_number);
+      }, 3000);
     }
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
   }, [selectedConversation]);
 
   // API Functions
@@ -210,6 +228,28 @@ const Chat: React.FC = () => {
     }
   };
 
+  // Silent poll: updates messages without showing spinner
+  // force=true skips the length comparison (used after sending to replace the optimistic message)
+  const loadChatHistorySilent = async (phoneNumber: number, force = false) => {
+    if (phoneNumber === 0) return;
+    try {
+      const token = Cookies.get('token');
+      const response = await axios.get(`${API_URL}/api/enhanced-chat/chats/${phoneNumber}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const incoming = response.data.data || [];
+      setMessages(prev => {
+        const prevReal = prev.filter(m => !m.sendError && !m.id.startsWith('temp-'));
+        const prevLastId = prevReal.at(-1)?.id;
+        const incomingLastId = incoming.at(-1)?.id;
+        if (force || incoming.length !== prevReal.length || incomingLastId !== prevLastId) return incoming;
+        return prev;
+      });
+    } catch {
+      // silently ignore poll errors
+    }
+  };
+
   const loadStatistics = async () => {
     try {
       const token = Cookies.get('token');
@@ -225,19 +265,33 @@ const Chat: React.FC = () => {
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage: ChatMessage = {
+      id: tempId,
+      message: newMessage,
+      from_cellphone: 0,
+      to_cellphone: selectedConversation.phone_number,
+      message_type: 'text',
+      status: 'sent',
+      timestamp: new Date(),
+      is_from_debtor: false,
+    };
+    setMessages(prev => [...prev, optimisticMessage]);
+    setNewMessage('');
+
     try {
       const token = Cookies.get('token');
+      const currentChannel = selectedConversation.channel === 'sms' ? 'sms' : 'whatsapp';
       await axios.post(
         `${API_URL}/api/enhanced-chat/chats/${selectedConversation.phone_number}/send`,
-        { message: newMessage, message_type: 'text' },
+        { message: optimisticMessage.message, message_type: 'text', channel: currentChannel },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setNewMessage('');
-      // Reload messages
-      loadChatHistory(selectedConversation.phone_number);
+      // Replace optimistic entry silently (no spinner)
+      loadChatHistorySilent(selectedConversation.phone_number, true);
     } catch (err: any) {
-      setError('Error al enviar mensaje');
+      setMessages(prev => prev.map(m => m.id === tempId ? { ...m, sendError: true } : m));
       console.error('Error sending message:', err);
     }
   };
@@ -266,7 +320,8 @@ const Chat: React.FC = () => {
         latest_message: 'Nueva conversación',
         latest_timestamp: new Date(),
         message_count: 0,
-        unread_count: 0
+        unread_count: 0,
+        channel: debtor.channel || 'whatsapp'
       };
       console.log('Setting conversation:', conversation);
       setSelectedConversation(conversation);
@@ -279,7 +334,8 @@ const Chat: React.FC = () => {
         latest_message: 'Nueva conversación - Sin teléfono',
         latest_timestamp: new Date(),
         message_count: 0,
-        unread_count: 0
+        unread_count: 0,
+        channel: 'whatsapp'
       };
       console.log('Setting virtual conversation:', conversation);
       setSelectedConversation(conversation);
@@ -613,9 +669,11 @@ const Chat: React.FC = () => {
                             </Box>
                             <Typography variant="body1">{message.message}</Typography>
                             <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                              {formatTimestamp(message.timestamp)}
+                              {message.sendError
+                                ? <span style={{ color: '#f44336' }}>(Error al enviar mensaje)</span>
+                                : formatTimestamp(message.timestamp)}
                             </Typography>
-                            {message.cost && (
+                            {!!message.cost && (
                               <Chip
                                 label={`$${message.cost.toFixed(4)}`}
                                 size="small"

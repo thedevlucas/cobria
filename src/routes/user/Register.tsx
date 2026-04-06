@@ -33,6 +33,8 @@ export default function Register() {
   const [accepted, setAccepted] = useState<boolean>(false);
   const [companyName, setCompanyName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [cellphone, setCellphone] = useState("");
+  const [telephone, setTelephone] = useState("");
   const isEmailValid = EMAIL_REGEX.test(email);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,6 +86,21 @@ export default function Register() {
 
           {InputTextPassword("Contraseña", password, setPassword)}
 
+          <TextField
+            value={cellphone}
+            onChange={(e) => setCellphone(e.target.value)}
+            label="Celular"
+            variant="filled"
+            sx={styleTextField}
+          />
+          <TextField
+            value={telephone}
+            onChange={(e) => setTelephone(e.target.value)}
+            label="Teléfono Fijo"
+            variant="filled"
+            sx={styleTextField}
+          />
+
           <FormControlLabel
             control={<Checkbox checked={accepted} onChange={handleChange} />}
             label={
@@ -107,7 +124,9 @@ export default function Register() {
                     name: name,
                     companyName: companyName,
                     password: password,
-                    isCollectionCompany: isCollectionCompany === "yes", 
+                    cellphone: parseInt(cellphone), 
+                    telephone: parseInt(telephone),
+                    isCollectionCompany: isCollectionCompany, 
                   });
               } finally {
                   setLoading(false);

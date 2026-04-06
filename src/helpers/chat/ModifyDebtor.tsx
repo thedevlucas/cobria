@@ -135,7 +135,7 @@ export async function deleteDebtor(id: number) {
   } catch (error: any) {
     Swal.fire({
       title: "Error",
-      text: error.response.data.message,
+      html: error.response.data.message,
       icon: "error",
     });
   }
