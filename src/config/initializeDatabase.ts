@@ -2,6 +2,7 @@ import { database } from "./Database";
 import { User } from "../models/User";
 import { Debtor } from "../models/Debtor";
 import { Cellphone } from "../models/Cellphone";
+import { Telephone } from "../models/Telephone";
 import { Cost } from "../models/Cost";
 import { PendingMessage } from "../models/PendingMessage";
 import { Company } from "../models/Company"; 
@@ -20,6 +21,7 @@ export const initializeDatabase = async () => {
     await Campaign.sync({ alter: true }); 
     await Debtor.sync({ alter: true });
     await Cellphone.sync({ alter: true });
+    await Telephone.sync({ alter: true });
     await Cost.sync({ alter: true }); 
     await PendingMessage.sync({ alter: true });
 

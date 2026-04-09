@@ -39,6 +39,7 @@ export interface Conversation {
   debtor_name: string;
   debtor_document: string;
   phone_number: number;
+  email?: string;
   latest_message: string;
   latest_timestamp: Date;
   message_count: number;
@@ -46,7 +47,7 @@ export interface Conversation {
   collection_stage: string;
   payment_probability: number;
   last_interaction: Date;
-  channel: 'whatsapp' | 'sms';
+  channel: 'whatsapp' | 'sms' | 'email';
 }
 
 export interface ChatStatistics {
@@ -165,56 +166,86 @@ export class RealChatService {
           {
             model: Cellphone,
             as: 'cellphones',
-            required: true,
+            required: false, // LEFT JOIN — include email-only debtors with no phone
             attributes: ['number', 'id'],
           },
         ],
-        attributes: ['id', 'name', 'document', 'paid', 'createdAt', 'channel'],
+        attributes: ['id', 'name', 'document', 'paid', 'createdAt', 'channel', 'email'],
       });
 
       const conversations: Conversation[] = [];
 
       for (const debtor of debtors) {
-        if (debtor.cellphones && debtor.cellphones.length > 0) {
-          for (const cellphone of debtor.cellphones) {
-            const phoneNumber = Number(cellphone.number);
+        const debtorChannel = (debtor as any).channel as string;
+        const debtorEmail = (debtor as any).email as string | undefined;
 
-// Find latest message that's not an internal/system message
-            const latestMessage = await Chat.findOne({
-              $and: [
-                { $or: [{ from_cellphone: phoneNumber }, { to_cellphone: phoneNumber }] },
-                { message: { $not: /\[AI_CONTEXT_INTERNAL\]/ } },
-                { message: { $not: /\[ADMIN_FEEDBACK\]/ } },
-                { message: { $not: /^\[ADMIN FEEDBACK\]:/ } },
-              ]
-            }).sort({ createdAt: -1 });
+        // --- Email debtor: no cellphone, use debtor.id as identifier ---
+        if (!debtor.cellphones || debtor.cellphones.length === 0) {
+          if (debtorChannel !== 'email' || !debtorEmail) continue;
 
-            const messageCount = await Chat.countDocuments({
-              $or: [{ from_cellphone: phoneNumber }, { to_cellphone: phoneNumber }],
-            });
+          const latestMessage = await Chat.findOne({
+            channel: 'email',
+            email: debtorEmail,
+          }).sort({ createdAt: -1 });
 
-            const unreadCount = await Chat.countDocuments({
-              from_cellphone: phoneNumber,
-            });
+          const messageCount = await Chat.countDocuments({ channel: 'email', email: debtorEmail });
 
-            const collectionStage = this.determineCollectionStage(debtor.paid, latestMessage);
-            const paymentProbability = await this.calculatePaymentProbability(debtor.id, phoneNumber);
+          conversations.push({
+            debtor_id: debtor.id,
+            debtor_name: debtor.name,
+            debtor_document: debtor.document,
+            phone_number: debtor.id, // used as route param to getChatHistory
+            email: debtorEmail,
+            latest_message: latestMessage?.message || 'Nueva conversación',
+            latest_timestamp: latestMessage?.createdAt || debtor.createdAt,
+            message_count: messageCount,
+            unread_count: 0,
+            collection_stage: this.determineCollectionStage(debtor.paid, latestMessage),
+            payment_probability: 0,
+            last_interaction: latestMessage?.createdAt || debtor.createdAt,
+            channel: 'email',
+          });
+          continue;
+        }
 
-            conversations.push({
-              debtor_id: debtor.id,
-              debtor_name: debtor.name,
-              debtor_document: debtor.document,
-              phone_number: phoneNumber,
-              latest_message: latestMessage?.message || 'Nueva conversación',
-              latest_timestamp: latestMessage?.createdAt || debtor.createdAt,
-              message_count: messageCount,
-              unread_count: unreadCount,
-              collection_stage: collectionStage,
-              payment_probability: paymentProbability,
-              last_interaction: latestMessage?.createdAt || debtor.createdAt,
-              channel: (latestMessage?.channel || (debtor as any).channel || 'whatsapp') as 'whatsapp' | 'sms',
-            });
-          }
+        // --- Phone-based debtor ---
+        for (const cellphone of debtor.cellphones) {
+          const phoneNumber = Number(cellphone.number);
+
+          const latestMessage = await Chat.findOne({
+            $and: [
+              { $or: [{ from_cellphone: phoneNumber }, { to_cellphone: phoneNumber }] },
+              { message: { $not: /\[AI_CONTEXT_INTERNAL\]/ } },
+              { message: { $not: /\[ADMIN_FEEDBACK\]/ } },
+              { message: { $not: /^\[ADMIN FEEDBACK\]:/ } },
+            ]
+          }).sort({ createdAt: -1 });
+
+          const messageCount = await Chat.countDocuments({
+            $or: [{ from_cellphone: phoneNumber }, { to_cellphone: phoneNumber }],
+          });
+
+          const unreadCount = await Chat.countDocuments({
+            from_cellphone: phoneNumber,
+          });
+
+          const collectionStage = this.determineCollectionStage(debtor.paid, latestMessage);
+          const paymentProbability = await this.calculatePaymentProbability(debtor.id, phoneNumber);
+
+          conversations.push({
+            debtor_id: debtor.id,
+            debtor_name: debtor.name,
+            debtor_document: debtor.document,
+            phone_number: phoneNumber,
+            latest_message: latestMessage?.message || 'Nueva conversación',
+            latest_timestamp: latestMessage?.createdAt || debtor.createdAt,
+            message_count: messageCount,
+            unread_count: unreadCount,
+            collection_stage: collectionStage,
+            payment_probability: paymentProbability,
+            last_interaction: latestMessage?.createdAt || debtor.createdAt,
+            channel: (latestMessage?.channel || debtorChannel || 'whatsapp') as 'whatsapp' | 'sms' | 'email',
+          });
         }
       }
 
@@ -231,7 +262,34 @@ static async getChatHistory(debtorIdOrPhone: number, userId: number): Promise<Ch
     try {
       const debtor = await this.findDebtorSmart(debtorIdOrPhone, userId);
 
-      if (!debtor || !debtor.cellphones || debtor.cellphones.length === 0) return [];
+      if (!debtor) return [];
+
+      // --- Email debtor: no cellphone ---
+      if (!debtor.cellphones || debtor.cellphones.length === 0) {
+        const debtorEmail = (debtor as any).email as string | undefined;
+        if (!debtorEmail) return [];
+
+        const messages = await Chat.find({
+          channel: 'email',
+          email: debtorEmail,
+        }).sort({ createdAt: 1 });
+
+        return messages.filter((msg: any) => msg.message).map((msg: any) => ({
+          id: msg._id.toString(),
+          message: msg.message,
+          from_cellphone: msg.from_cellphone,
+          to_cellphone: msg.to_cellphone,
+          from_debtor_name: 'Sistema',
+          to_debtor_name: debtor.name,
+          message_type: msg.message_type || 'text',
+          status: msg.status || 'sent',
+          timestamp: msg.createdAt,
+          cost: msg.cost || 0,
+          is_from_debtor: false,
+          media_url: msg.media_url,
+          media_type: msg.media_type,
+        }));
+      }
 
       const phoneNumber = Number(debtor.cellphones[0].number);
 

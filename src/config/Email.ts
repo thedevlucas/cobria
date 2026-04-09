@@ -4,16 +4,16 @@ const nodemailer=require('nodemailer');
 import { email, email_password, email_port, email_host } from "./Constants";
 
 // Transporter
+// Port 587 uses STARTTLS (secure: false). Port 465 uses SSL (secure: true).
 export const transportMail = nodemailer.createTransport({
     host: email_host,
     port: email_port,
-    secure: true, // Use STARTTLS instead of SSL
-    requireTLS: true,
+    secure: email_port === 465,
     auth: {
         user: email,
         pass: email_password
     },
     tls: {
-        rejectUnauthorized: false, // Allow self-signed certificates in development
+        rejectUnauthorized: false,
     }
 })    

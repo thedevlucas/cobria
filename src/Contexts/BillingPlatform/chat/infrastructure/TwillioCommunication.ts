@@ -10,6 +10,7 @@ import { TWILIO_WHATSAPP_TEMPLATES } from "../../../../config/Twillio";
 import { Client } from "../../company/domain/Client";
 import { MessageInstance } from "twilio/lib/rest/api/v2010/account/message";
 import VoiceResponse from "twilio/lib/twiml/VoiceResponse";
+import { transportMail } from "../../../../config/Email";
 
 export class TwillioCommunication implements Communication {
   twilioClient: twilio.Twilio;
@@ -202,13 +203,19 @@ export class TwillioCommunication implements Communication {
     subject: string;
     message: string;
   }): Promise<{ cost: number; message: string }> {
-    console.log(
-      `Email would be sent to ${params.to} with subject: ${params.subject}`
-    );
+    console.log(`Sending email to ${params.to} with subject: ${params.subject}`);
+
+    await transportMail.sendMail({
+      from: params.from,
+      to: params.to,
+      subject: params.subject,
+      text: params.message,
+      html: `<p>${params.message.replace(/\n/g, "<br/>")}</p>`,
+    });
 
     return {
       cost: 0.001,
-      message: `Email sent to ${params.to}`,
+      message: params.message,
     };
   }
 

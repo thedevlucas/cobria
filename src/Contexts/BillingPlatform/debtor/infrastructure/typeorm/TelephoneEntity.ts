@@ -12,15 +12,15 @@ export const TelephoneEntity = new EntitySchema<Telephone>({
       generated: true,
     },
     from: {
-      type: Number,
+      type: "bigint",
       nullable: false,
     },
     to: {
-      type: Number,
+      type: "bigint",
       nullable: false,
     },
     id_debtor: {
-      type: Number,
+      type: "bigint",
       nullable: false,
     },
     createdAt: {

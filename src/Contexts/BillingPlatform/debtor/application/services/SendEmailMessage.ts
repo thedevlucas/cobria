@@ -72,10 +72,12 @@ export class SendEmailMessage {
         document: params.row.cedula,
         idUser: params.idCompany,
         debtDate: params.row.fecha_deuda,
+        email: email,
+        channel: 'email',
       });
 
       // Create email message content
-      const emailSubject = `Recordatorio de pago - ${company.companyName}`;
+      const emailSubject = `Recordatorio de pago${company.companyName ? ` - ${company.companyName}` : ""}`;
       const emailMessage = sendDebtMessage(
         params.row,
         gptPromptsJson.prompt_greeting,
@@ -89,13 +91,6 @@ export class SendEmailMessage {
       if (!virtualPhoneNumber || isNaN(Number(virtualPhoneNumber))) {
         throw new httpError("Número de teléfono de la empresa no válido", 400);
       }
-
-      await this.createChatService.run({
-        idUser: params.idCompany,
-        fromCellphone: Number(virtualPhoneNumber),
-        toCellphone: 0, // Email doesn't have a phone number
-        message: emailMessage,
-      });
 
       if (!isTimeToCommunicate) {
         try {
@@ -143,15 +138,16 @@ export class SendEmailMessage {
       });
       await this.costRepository.save(cost);
 
-      if (response.message) {
-        const chat = Chat.create({
-          idUser: debtor.id_user,
-          fromCellphone: Number(virtualPhoneNumber),
-          toCellphone: 0, // Email doesn't have a phone number
-          message: response.message || "",
-        });
-        await this.chatRepository.save(chat);
-      }
+      // Save chat linked to the debtor's email so it appears in the chat panel
+      const chat = Chat.create({
+        idUser: params.idCompany,
+        fromCellphone: Number(virtualPhoneNumber),
+        toCellphone: debtor.id,   // use debtor ID as unique identifier
+        message: response.message || emailMessage,
+        channel: 'email',
+      });
+      (chat as any).email = email;  // store email address for lookup
+      await this.chatRepository.save(chat);
 
       debtor.addEvent("Se contactó al deudor por email");
       await this.debtorRepository.save(debtor);

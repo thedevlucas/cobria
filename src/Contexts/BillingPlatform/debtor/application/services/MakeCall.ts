@@ -1,7 +1,7 @@
 import {
   cellphoneInfo,
   gptPromptsJson,
-  twilio_whatsapp_number,
+  twilio_sms_number,
 } from "../../../../../config/Constants";
 import { sendDebtMessage } from "../../../../../helpers/chat/whatsapp/GPTHelper";
 import { Communication } from "../../../chat/domain/Communication";
@@ -33,6 +33,28 @@ export class MakeCall {
     private readonly companyRepository: CompanyRepository
   ) {}
 
+  private cleanDigits(input: string): string {
+    return (input || "").toString().replace(/\D/g, "");
+  }
+
+  private buildE164Like(params: {
+    rawPhone: string;
+    countryCode: string;
+  }): string | null {
+    const raw = this.cleanDigits(params.rawPhone);
+    const cc = this.cleanDigits(params.countryCode);
+
+    if (!raw) return null;
+
+    const full = raw.startsWith(cc) ? raw : `${cc}${raw}`;
+
+    // E.164 max without +
+    if (full.length > 15) return null;
+    if (full.length < 10) return null;
+
+    return full;
+  }
+
   async run(params: {
     telephones: string[] | number[];
     row: WorkbookRow;
@@ -53,10 +75,10 @@ export class MakeCall {
     let numberToBeUsedForCollection: string;
     
     if (company.role === Role.SUPERADMIN) {
-      if (!twilio_whatsapp_number) {
-        throw new httpError("Número de WhatsApp de Twilio no configurado", 400);
+      if (!twilio_sms_number) {
+        throw new httpError("Número SMS de Twilio no configurado", 400);
       }
-      numberToBeUsedForCollection = twilio_whatsapp_number.toString();
+      numberToBeUsedForCollection = twilio_sms_number.toString();
     } else {
       // Validate agent phone number
       if (!params.agentPhoneNumber || isNaN(Number(params.agentPhoneNumber))) {
@@ -75,12 +97,40 @@ export class MakeCall {
       idCompany: params.idCompany,
     });
 
+    const cleanCountryCode =
+      this.cleanDigits(params.countryCode?.toString() || "") ||
+      this.cleanDigits(cellphoneInfo.country_code?.toString() || "") ||
+      "54";
+
     for (const telephone of params.telephones) {
       if (!telephone) {
         continue;
       }
 
-      let stringTelephoneToVerify = telephone.toString();
+      const stringTelephoneToVerify = telephone.toString();
+      const digitsOnly = this.cleanDigits(stringTelephoneToVerify);
+
+      if (!digitsOnly) {
+        console.log(`⚠️ MakeCall: skipping invalid destination: ${stringTelephoneToVerify}`);
+        continue;
+      }
+
+      const telephoneWithCountryCode = this.buildE164Like({
+        rawPhone: digitsOnly,
+        countryCode: cleanCountryCode,
+      });
+
+      if (!telephoneWithCountryCode) {
+        console.log(`⚠️ MakeCall: skipping destination by invalid E164 size: ${cleanCountryCode} + ${digitsOnly}`);
+        continue;
+      }
+
+      const numberTelephone = Number(telephoneWithCountryCode);
+
+      if (Number.isNaN(numberTelephone)) {
+        console.log(`⚠️ MakeCall: skipping destination NaN after conversion: ${telephoneWithCountryCode}`);
+        continue;
+      }
 
       // creamos el deudor
       const debtor = await this.createDebtorService.run({
@@ -89,13 +139,6 @@ export class MakeCall {
         idUser: params.idCompany,
         debtDate: params.row.fecha_deuda,
       });
-
-      // formateamos el numero de telefono con el codigo de pais
-      let telephoneWithCountryCode = params.countryCode
-        ? `${params.countryCode}${stringTelephoneToVerify}`
-        : `${cellphoneInfo.country_code}${stringTelephoneToVerify}`;
-
-      const numberTelephone = Number(telephoneWithCountryCode);
 
       // construimos el contexto del deudor para la ia
       const jsonContextMessage = `${rowString}
@@ -110,6 +153,7 @@ export class MakeCall {
 
       // Creamos el telefono si no existe
       const telephoneExists = await this.debtorRepository.findByTelephone(
+        Number(numberToBeUsedForCollection),
         numberTelephone,
         params.idCompany
       );

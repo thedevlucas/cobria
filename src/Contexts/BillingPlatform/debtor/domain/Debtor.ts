@@ -60,6 +60,7 @@ export class Debtor extends AggregateRoot {
     name: string;
     status: Status;
     document: number;
+    email?: string;
     channel?: string;
   }): Debtor {
     return new Debtor(
@@ -68,7 +69,7 @@ export class Debtor extends AggregateRoot {
       params.document,
       PaymentStatus.NO_CONTACT,
       params.status,
-      undefined,
+      params.email,
       params.channel || 'whatsapp'
     );
   }
